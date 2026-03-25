@@ -1,0 +1,14 @@
+services:
+
+  streamlit:
+    build: ../streamlit_app
+    container_name: arbovigilancia_dashboard
+    command: streamlit run main.py --server.headless true --server.port 8501
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../streamlit_app:/app
+      - ~/.aws:/root/.aws:ro
+    environment:
+      - AWS_DEFAULT_REGION=sa-east-1
+    restart: always

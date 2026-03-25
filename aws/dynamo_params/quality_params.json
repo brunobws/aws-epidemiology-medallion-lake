@@ -1,0 +1,70 @@
+[
+    {
+        "trgt_tbl": "ibge_tb_municipios",
+        "stop_job": false,
+        "quality_params": {
+            "not_null": {
+                "column": "cd_geocode,nm_municipio"
+            },
+            "unique_vals": {
+                "column": "cd_geocode"
+            },
+            "df_count_between": {
+                "min": 640,
+                "max": 660
+            }
+        }
+    },
+    {
+        "trgt_tbl": "ibge_tb_populacao",
+        "stop_job": false,
+        "quality_params": {
+            "not_null": {
+                "column": "cd_geocode,vl_populacao"
+            },
+            "unique_vals": {
+                "column": "cd_geocode"
+            },
+            "df_count_between": {
+                "min": 640,
+                "max": 660
+            },
+            "values_between": {
+                "column": "vl_populacao",
+                "min": "100",
+                "max": "15000000"
+            }
+        }
+    },
+    {
+        "trgt_tbl": "infodengue_tb_alertas",
+        "stop_job": false,
+        "quality_params": {
+            "not_null": {
+                "column": "cd_geocode,ds_doenca,vl_casos"
+            },
+            "values_to_be_in_set": {
+                "column": "ds_doenca,nr_nivel_alerta",
+                "type": "str,int",
+                "set_values": [["dengue", "chikungunya", "zika"], [1, 2, 3, 4]]
+            },
+            "df_count_between": {
+                "min": 1,
+                "max": 100000
+            }
+        }
+    },
+    {
+        "trgt_tbl": "sinan_tb_notificacoes",
+        "stop_job": false,
+        "quality_params": {
+            "not_null": {
+                "column": "ID_AGRAVO,DT_NOTIFIC,ID_MUNICIP"
+            },
+            "df_count_between": {
+                "min": 1000,
+                "max": 50000000
+            }
+        }
+    }
+]

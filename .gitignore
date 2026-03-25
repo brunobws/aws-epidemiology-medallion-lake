@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/logger.toml
+.streamlit/cache/
+
+# Logs
+logs/
+*.log
+*.logs
+
+# AWS & Credentials
+.aws/
+*.pem
+*.key
+credentials
+.env
+.env.local
+.env.*.local
+
+# Data files
+*.csv
+*.parquet
+data/
+*.xlsx
+*.xls
+
+# OS
+Thumbs.db
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# Project specific
+temp/
+
+# SSH Keys
+*.pem

@@ -1,0 +1,22 @@
+[
+    {
+        "target_table": "gold_tb_ft_incidencia",
+        "layer": "gold",
+        "mode": "overwrite"
+    },
+    {
+        "target_table": "gold_tb_ft_alertas",
+        "layer": "gold",
+        "mode": "overwrite"
+    },
+    {
+        "target_table": "gold_tb_ft_ranking",
+        "layer": "gold",
+        "mode": "overwrite"
+    },
+    {
+        "target_table": "gold_tb_ft_serie_historica",
+        "layer": "gold",
+        "mode": "overwrite"
+    }
+]

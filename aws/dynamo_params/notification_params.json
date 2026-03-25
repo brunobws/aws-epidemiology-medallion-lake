@@ -1,0 +1,30 @@
+[
+    {
+        "trgt_tbl": "ibge_tb_municipios",
+        "critical": false,
+        "email_on_failure": "brun0ws@outlook.com",
+        "email_on_warning": "brun0ws@outlook.com",
+        "email_on_ingestion": true
+    },
+    {
+        "trgt_tbl": "ibge_tb_populacao",
+        "critical": false,
+        "email_on_failure": "brun0ws@outlook.com",
+        "email_on_warning": "brun0ws@outlook.com",
+        "email_on_ingestion": true
+    },
+    {
+        "trgt_tbl": "infodengue_tb_alertas",
+        "critical": true,
+        "email_on_failure": "brun0ws@outlook.com",
+        "email_on_warning": "brun0ws@outlook.com",
+        "email_on_ingestion": true
+    },
+    {
+        "trgt_tbl": "sinan_tb_notificacoes",
+        "critical": true,
+        "email_on_failure": "brun0ws@outlook.com",
+        "email_on_warning": "brun0ws@outlook.com",
+        "email_on_ingestion": true
+    }
+]

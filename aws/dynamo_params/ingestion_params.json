@@ -1,0 +1,55 @@
+[
+    {
+        "trgt_tbl": "ibge_tb_municipios",
+        "ext": "json",
+        "s3_bronze_path": "s3://bws-dl-bronze-sae1-prd/ibge/tb_municipios/",
+        "s3_silver_path": "s3://bws-dl-silver-sae1-prd/ibge/tb_municipios/",
+        "silver_table": "silver.tb_municipios",
+        "table_schema": "{'cd_geocode': 'int', 'nm_municipio': 'string', 'nm_microrregiao': 'string', 'nm_mesorregiao': 'string'}",
+        "partition_column": "ingestion_date",
+        "mode": "overwrite",
+        "has_bdq": "True",
+        "source": "ibge"
+    },
+    {
+        "trgt_tbl": "ibge_tb_populacao",
+        "ext": "json",
+        "s3_bronze_path": "s3://bws-dl-bronze-sae1-prd/ibge/tb_populacao/",
+        "s3_silver_path": "s3://bws-dl-silver-sae1-prd/ibge/tb_populacao/",
+        "silver_table": "silver.tb_populacao",
+        "table_schema": "{'cd_geocode': 'int', 'nm_municipio': 'string', 'vl_populacao': 'int', 'dt_ano_referencia': 'int'}",
+        "partition_column": "ingestion_date",
+        "mode": "overwrite",
+        "has_bdq": "True",
+        "source": "ibge"
+    },
+    {
+        "trgt_tbl": "infodengue_tb_alertas",
+        "ext": "json",
+        "s3_bronze_path": "s3://bws-dl-bronze-sae1-prd/infodengue/tb_alertas/",
+        "s3_silver_path": "s3://bws-dl-silver-sae1-prd/infodengue/tb_alertas/",
+        "silver_table": "silver.tb_alertas",
+        "table_schema": "{'cd_geocode': 'int', 'ds_doenca': 'string', 'dt_semana_epidemiologica': ['date', 'yyyy-MM-dd'], 'nr_semana_epi': 'int', 'nr_ano_epi': 'int', 'nr_nivel_alerta': 'int', 'vl_casos_estimados': 'double', 'vl_casos_estimados_min': 'double', 'vl_casos_estimados_max': 'double', 'vl_casos': 'int', 'vl_rt': 'double', 'vl_incidencia': 'double', 'vl_temp_min': 'double', 'vl_temp_max': 'double', 'vl_umid_min': 'double', 'vl_umid_max': 'double', 'vl_receptividade': 'int', 'vl_transmissao': 'int', 'nm_municipio': 'string'}",
+        "partition_column": "ingestion_date",
+        "mode": "append",
+        "has_bdq": "True",
+        "source": "infodengue"
+    },
+    {
+        "trgt_tbl": "sinan_tb_notificacoes",
+        "ext": "csv",
+        "s3_bronze_path": "s3://bws-dl-bronze-sae1-prd/sinan/tb_notificacoes/",
+        "s3_silver_path": "s3://bws-dl-silver-sae1-prd/sinan/tb_notificacoes/",
+        "silver_table": "silver.tb_notificacoes",
+        "table_schema": "{'ID_AGRAVO': 'string', 'DT_NOTIFIC': ['date', 'dd/MM/yyyy'], 'DT_SIN_PRI': ['date', 'dd/MM/yyyy'], 'ID_MUNICIP': 'int', 'SG_UF': 'int', 'NU_IDADE_N': 'int', 'CS_SEXO': 'string', 'CLASSI_FIN': 'string', 'EVOLUCAO': 'string'}",
+        "partition_column": "ingestion_date",
+        "mode": "overwrite",
+        "has_bdq": "True",
+        "source": "sinan",
+        "header": "True",
+        "sep": ";",
+        "encoding": "latin-1",
+        "filter_column": "SG_UF",
+        "filter_value": "35"
+    }
+]
