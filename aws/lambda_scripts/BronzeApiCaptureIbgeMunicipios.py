@@ -45,6 +45,7 @@ TARGET_TABLE  = "ibge_tb_municipios"
 
 S3_BUCKET     = os.environ["S3_BUCKET"]
 ENV           = os.getenv("ENV", "")
+S3_BUCKET = f'{S3_BUCKET}-{ENV}'
 
 # IBGE Localidades API - Municipalities for Sao Paulo state (UF code 35)
 BASE_URL      = "https://servicodados.ibge.gov.br/api/v1/localidades/estados/35/municipios"

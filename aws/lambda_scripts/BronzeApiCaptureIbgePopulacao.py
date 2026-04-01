@@ -45,6 +45,7 @@ TARGET_TABLE  = "ibge_tb_populacao"
 
 S3_BUCKET     = os.environ["S3_BUCKET"]
 ENV           = os.getenv("ENV", "")
+S3_BUCKET     = f"{S3_BUCKET}-{ENV}" 
 
 # IBGE SIDRA API - Population estimates for all SP municipalities
 # Table 6579 = Estimativas da populacao residente

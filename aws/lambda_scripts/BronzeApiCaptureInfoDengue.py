@@ -48,6 +48,7 @@ TARGET_TABLE  = "infodengue_tb_alertas"
 
 S3_BUCKET     = os.environ["S3_BUCKET"]
 ENV           = os.getenv("ENV", "")
+S3_BUCKET     = f"{S3_BUCKET}-{ENV}" 
 
 # InfoDengue API base URL
 BASE_URL      = "https://info.dengue.mat.br/api/alertcity"
@@ -168,7 +169,7 @@ def fetch_geocodes(event: Dict[str, Any]) -> List[int]:
     return geocodes
 
 
-def flatten_alert_record(raw: Dict[str, Any], disease: str) -> Dict[str, Any]:
+def flatten_alert_record(raw: Dict[str, Any], disease: str, geocode: int) -> Dict[str, Any]:
     """Flattens an InfoDengue alert record into the target schema.
 
     InfoDengue fields:
@@ -188,17 +189,13 @@ def flatten_alert_record(raw: Dict[str, Any], disease: str) -> Dict[str, Any]:
         receptivo       = Climate receptivity flag
         transmissao     = Active transmission flag
     """
-    # Parse epidemiological week from SE field (e.g. 202452 -> year=2024, week=52)
     se_val    = raw.get("SE", 0)
     nr_ano    = se_val // 100
     nr_semana = se_val % 100
-
-    # Convert data_iniSE (ms timestamp) to date string
     ts_ms = raw.get("data_iniSE", 0)
     dt_semana = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d") if ts_ms else None
-
     return {
-        "cd_geocode":              raw.get("municipio_geocodigo", se_val),
+        "cd_geocode":              geocode,
         "ds_doenca":               disease,
         "dt_semana_epidemiologica": dt_semana,
         "nr_semana_epi":           nr_semana,
@@ -232,6 +229,7 @@ def fetch_alerts_for_disease(geocodes: List[int], disease: str,
     failures    = 0
 
     total = len(geocodes)
+
     for i, geocode in enumerate(geocodes):
         url = (
             f"{BASE_URL}?geocode={geocode}&disease={disease}&format=json"
@@ -243,7 +241,7 @@ def fetch_alerts_for_disease(geocodes: List[int], disease: str,
             raw_alerts = get_json(url)
 
             if raw_alerts:
-                records = [flatten_alert_record(r, disease) for r in raw_alerts]
+                records = [flatten_alert_record(r, disease, geocode) for r in raw_alerts]
                 all_records.extend(records)
 
         except Exception as e:

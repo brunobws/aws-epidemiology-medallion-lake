@@ -52,6 +52,7 @@ TARGET_TABLE  = "sinan_tb_notificacoes"
 
 S3_BUCKET     = os.environ["S3_BUCKET"]
 ENV           = os.getenv("ENV", "")
+S3_BUCKET     = f"{S3_BUCKET}-{ENV}" 
 
 # OpenDataSUS CKAN S3 bucket - direct CSV download URLs
 # Pattern: https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN/{Disease}/csv/{PREFIX}{YY}.csv.zip
