@@ -13,10 +13,11 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.shared_ui import render_header, render_sidebar, render_footer, require_athena
+from utils.shared_ui import render_header, render_sidebar, render_footer, require_athena, render_floating_ia_button
 
 render_header()
 render_sidebar()
+render_floating_ia_button()
 
 athena_service = require_athena()
 
