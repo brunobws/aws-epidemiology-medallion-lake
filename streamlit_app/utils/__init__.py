@@ -1,5 +1,5 @@
 """
-Utilities package for Breweries Dashboard application.
+Utilities package for ArboVigilancia SP Dashboard.
 
-This package contains modules for Athena connectivity and data processing.
+Modules for Athena connectivity, caching, logging and data processing.
 """

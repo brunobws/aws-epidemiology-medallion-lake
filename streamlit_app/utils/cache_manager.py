@@ -13,7 +13,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 from typing import Any, Callable
 from functools import wraps
-from utils.config import CACHE_TTL, ENABLE_CACHE
+from config import CACHE_TTL, ENABLE_CACHE
 ###################################
 
 

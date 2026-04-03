@@ -10,7 +10,7 @@
 
 ########### imports ################
 import logging
-from utils.config import LOG_LEVEL, LOG_FORMAT
+from config import LOG_LEVEL, LOG_FORMAT
 ###################################
 
 

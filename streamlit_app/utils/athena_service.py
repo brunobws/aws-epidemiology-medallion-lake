@@ -21,7 +21,7 @@ from typing import Optional, Dict, Any
 from time import sleep
 from datetime import datetime
 from utils.logger import get_logger
-from utils.config import (
+from config import (
     AWS_REGION, ATHENA_DATABASE, ATHENA_LOGS_DATABASE,
     ATHENA_S3_OUTPUT, ATHENA_QUERY_TIMEOUT_SECONDS
 )
