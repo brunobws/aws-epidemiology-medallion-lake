@@ -102,7 +102,7 @@ def render_epidemic_demographic(athena_service: AthenaService):
     """Render demographic profile tab."""
 
     # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### 👥 Filtros Demografico")
+    st.sidebar.markdown("### Filtros Demografico")
     selected_disease = st.sidebar.selectbox(
         "Doenca",
         DISEASES,
@@ -121,7 +121,7 @@ def render_epidemic_demographic(athena_service: AthenaService):
         st.warning("Nenhum dado demografico disponivel.")
         return
 
-    st.subheader(f"👥 Perfil Demografico — {DISEASES_PT[selected_disease]} ({selected_year})")
+    st.subheader(f"Perfil Demografico — {DISEASES_PT[selected_disease]} ({selected_year})")
     st.markdown("---")
 
     # ── KPIs ──────────────────────────────────────────────────

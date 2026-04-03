@@ -103,7 +103,7 @@ def render_epidemic_ranking(athena_service: AthenaService):
     """Render ranking and hotspots tab."""
 
     # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### 🏆 Filtros Ranking")
+    st.sidebar.markdown("### Filtros Ranking")
     selected_disease = st.sidebar.selectbox(
         "Doenca",
         DISEASES,
@@ -124,7 +124,7 @@ def render_epidemic_ranking(athena_service: AthenaService):
         st.warning("Nenhum dado de ranking disponivel.")
         return
 
-    st.subheader(f"🏆 Ranking — {DISEASES_PT[selected_disease]} ({selected_year})")
+    st.subheader(f"Ranking — {DISEASES_PT[selected_disease]} ({selected_year})")
     st.markdown("---")
 
     # ── Chart 1: Top-N municipalities by incidence ────────────
@@ -199,7 +199,7 @@ def render_epidemic_ranking(athena_service: AthenaService):
     st.markdown("---")
 
     # ── Full ranking table ────────────────────────────────────
-    st.subheader("📋 Ranking Completo")
+    st.subheader("Ranking Completo")
 
     search_term = st.text_input("Buscar municipio", "", key="rank_search")
     filtered_df = df.copy()

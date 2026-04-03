@@ -5,7 +5,7 @@
 # Description:
 #   Entry point for ArboVigilancia SP Dashboard.
 #   Defines multi-page navigation with per-page icons.
-#   Run: streamlit run main.py
+#   Run: streamlit run app.py
 ####################################################################
 
 import sys

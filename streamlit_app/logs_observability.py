@@ -95,7 +95,7 @@ def render_logs_observability(athena_service: AthenaService):
     ####################################################################
     # FILTERS
     ####################################################################
-    st.subheader("🔍 Filters")
+    st.subheader("Filters")
 
     col1, col2, col3 = st.columns(3)
 

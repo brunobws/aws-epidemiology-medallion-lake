@@ -93,7 +93,7 @@ def render_data_quality(athena_service: AthenaService):
     ####################################################################
     # KPIs
     ####################################################################
-    st.subheader("📊 Data Quality Summary")
+    st.subheader("Data Quality Summary")
 
     kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
 

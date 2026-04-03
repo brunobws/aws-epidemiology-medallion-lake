@@ -105,7 +105,7 @@ def render_epidemic_timeseries(athena_service: AthenaService):
     """Render time series analysis tab."""
 
     # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### 📅 Filtros Serie Temporal")
+    st.sidebar.markdown("### Filtros Serie Temporal")
     selected_disease = st.sidebar.selectbox(
         "Doenca",
         DISEASES,
@@ -124,7 +124,7 @@ def render_epidemic_timeseries(athena_service: AthenaService):
         st.warning("Nenhum dado disponivel para o periodo selecionado.")
         return
 
-    st.subheader(f"📈 Serie Temporal — {DISEASES_PT[selected_disease]} ({selected_year})")
+    st.subheader(f"Serie Temporal — {DISEASES_PT[selected_disease]} ({selected_year})")
     st.markdown("---")
 
     num_weeks = len(df)
@@ -229,7 +229,7 @@ def render_epidemic_timeseries(athena_service: AthenaService):
     st.markdown("---")
 
     # ── Data table ────────────────────────────────────────────
-    st.subheader("📋 Dados Semanais")
+    st.subheader("Dados Semanais")
     display_df = df[["week_date", "week_num", "total_cases", "estimated_cases", "avg_rt", "municipalities"]].copy()
     display_df.columns = ["Data", "Semana", "Casos", "Estimados", "Rt Medio", "Municipios"]
 

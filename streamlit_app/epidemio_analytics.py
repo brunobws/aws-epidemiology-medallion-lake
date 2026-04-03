@@ -9,8 +9,8 @@
 #
 #   Features:
 #   - Multi-disease alert dashboard (Dengue, Chikungunya, Zika)
-#   - Weekly alert status overview
-#   - Geographic distribution by mesoregion
+#   - Weekly alert status overview with sparkline KPI cards
+#   - Geographic distribution by mesoregion colored by alert level
 #   - Comparative disease analysis
 #   - Summary statistics by administrative region
 ####################################################################
@@ -33,11 +33,13 @@ from config import (
 )
 from theme import (
     apply_professional_theme,
+    kpi_card_with_sparkline,
     ALERT_VERDE,
     ALERT_AMARELO,
     ALERT_LARANJA,
     ALERT_VERMELHO,
     COLOR_SUCCESS,
+    COLOR_INFO,
 )
 ###################################
 
@@ -46,10 +48,7 @@ logger = get_logger(__name__)
 
 @cached_query(ttl_seconds=CACHE_TTL)
 def fetch_current_alerts(athena_service: AthenaService, disease: str) -> pd.DataFrame:
-    """
-    Fetch latest weekly alerts for specified disease.
-    Returns the most recent week available per municipality.
-    """
+    """Fetch latest weekly alerts for specified disease."""
     query = f"""
     SELECT
         cd_geocode, nm_municipio, nm_microrregiao, nm_mesorregiao,
@@ -79,15 +78,13 @@ def fetch_current_alerts(athena_service: AthenaService, disease: str) -> pd.Data
         return df
     except Exception as e:
         logger.error(f"Error fetching current alerts: {str(e)}")
-        st.error(f"Failed to fetch alerts: {str(e)}")
+        st.error(f"Falha ao buscar alertas: {str(e)}")
         return pd.DataFrame()
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
 def fetch_comparative_alerts(athena_service: AthenaService) -> pd.DataFrame:
-    """
-    Fetch latest alerts for all diseases to compare.
-    """
+    """Fetch latest alerts for all diseases for comparison."""
     query = f"""
     SELECT
         ds_doenca, nr_nivel_alerta, COUNT(*) as count_municipalities
@@ -112,9 +109,7 @@ def fetch_comparative_alerts(athena_service: AthenaService) -> pd.DataFrame:
 
 @cached_query(ttl_seconds=CACHE_TTL)
 def fetch_mesoregion_summary(athena_service: AthenaService, disease: str) -> pd.DataFrame:
-    """
-    Fetch summary statistics aggregated by mesoregion.
-    """
+    """Fetch summary statistics aggregated by mesoregion."""
     query = f"""
     SELECT
         nm_mesorregiao,
@@ -136,7 +131,8 @@ def fetch_mesoregion_summary(athena_service: AthenaService, disease: str) -> pd.
     """
     try:
         df = athena_service.query_gold(query)
-        for col in ["total_cases", "avg_rt", "max_alert_level", "municipalities_high_alert", "total_municipalities", "municipalities_epidemic"]:
+        for col in ["total_cases", "avg_rt", "max_alert_level", "municipalities_high_alert",
+                    "total_municipalities", "municipalities_epidemic"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
         return df
@@ -145,37 +141,38 @@ def fetch_mesoregion_summary(athena_service: AthenaService, disease: str) -> pd.
         return pd.DataFrame()
 
 
-def create_gauge_chart(value: float, max_val: float, title: str, color: str) -> go.Figure:
-    """Create a simple gauge chart using indicator."""
-    fig = go.Figure(data=[go.Indicator(
-        mode="gauge+number+delta",
-        value=value,
-        domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": title},
-        gauge={
-            "axis": {"range": [0, max_val]},
-            "bar": {"color": color},
-            "steps": [
-                {"range": [0, max_val * 0.33], "color": "rgba(0,255,0,0.1)"},
-                {"range": [max_val * 0.33, max_val * 0.66], "color": "rgba(255,255,0,0.1)"},
-                {"range": [max_val * 0.66, max_val], "color": "rgba(255,0,0,0.1)"},
-            ],
-            "threshold": {
-                "line": {"color": "red", "width": 4},
-                "thickness": 0.75,
-                "value": max_val,
-            },
-        },
-    )])
-    fig.update_layout(height=300)
-    return apply_professional_theme(fig)
+@cached_query(ttl_seconds=CACHE_TTL)
+def fetch_kpi_trends(athena_service: AthenaService, disease: str) -> pd.DataFrame:
+    """Fetch last 8 weeks of aggregate KPIs for sparkline trend lines."""
+    query = f"""
+    SELECT
+        dt_semana_epidemiologica,
+        SUM(CAST(vl_casos AS BIGINT)) as total_cases,
+        AVG(CAST(vl_rt AS DOUBLE)) as avg_rt,
+        COUNT(CASE WHEN CAST(fl_epidemia AS INT) = 1 THEN 1 END) as municipalities_epidemic,
+        COUNT(CASE WHEN CAST(nr_nivel_alerta AS INT) = 1 THEN 1 END) * 100.0 / COUNT(*) as pct_green
+    FROM {TABLE_ALERTS_WEEKLY}
+    WHERE ds_doenca = '{disease}'
+    GROUP BY dt_semana_epidemiologica
+    ORDER BY dt_semana_epidemiologica DESC
+    LIMIT 8
+    """
+    try:
+        df = athena_service.query_gold(query)
+        for col in ["total_cases", "avg_rt", "municipalities_epidemic", "pct_green"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+        return df
+    except Exception as e:
+        logger.error(f"Error fetching KPI trends: {str(e)}")
+        return pd.DataFrame()
 
 
 def render_epidemio_analytics(athena_service: AthenaService):
     """Main render function for epidemiological analytics."""
 
     # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### 🎯 Filtros")
+    st.sidebar.markdown("### Filtros")
     selected_disease = st.sidebar.selectbox(
         "Doença",
         DISEASES,
@@ -188,72 +185,69 @@ def render_epidemio_analytics(athena_service: AthenaService):
         current_alerts = fetch_current_alerts(athena_service, selected_disease)
         comparative = fetch_comparative_alerts(athena_service)
         mesoregion_summary = fetch_mesoregion_summary(athena_service, selected_disease)
+        kpi_trends = fetch_kpi_trends(athena_service, selected_disease)
 
     if current_alerts.empty:
-        st.warning("Nenhum dado de alerta disponível para período selecionado.")
+        st.warning("Nenhum dado de alerta disponivel para o periodo selecionado.")
         return
 
-    st.title(f"🦟 Visão Geral — {DISEASES_PT[selected_disease]}")
+    st.title(f"Visao Geral — {DISEASES_PT[selected_disease]}")
     st.markdown("---")
 
-    # ── Section 1: KPIs ──────────────────────────────────────
+    # ── Trend series (oldest → newest for sparklines) ────────
+    alert_colors_by_level = {1: ALERT_VERDE, 2: ALERT_AMARELO, 3: ALERT_LARANJA, 4: ALERT_VERMELHO}
+
+    if not kpi_trends.empty:
+        trends_sorted = kpi_trends.sort_values("dt_semana_epidemiologica")
+        cases_trend = trends_sorted["total_cases"].tolist()
+        rt_trend = trends_sorted["avg_rt"].tolist()
+        epidemic_trend = trends_sorted["municipalities_epidemic"].tolist()
+        pct_green_trend = trends_sorted["pct_green"].tolist()
+    else:
+        cases_trend = rt_trend = epidemic_trend = pct_green_trend = []
+
+    # ── Section 1: KPI cards with sparklines ─────────────────
     total_cases = int(current_alerts["vl_casos"].sum())
     total_municipalities = len(current_alerts)
     avg_rt = round(current_alerts["vl_rt"].mean(), 2)
     municipalities_in_epidemic = int(current_alerts[current_alerts["fl_epidemia"] == 1].shape[0])
-
-    # Count alert levels
     alert_distribution = current_alerts["nr_nivel_alerta"].value_counts().to_dict()
-    high_alert_count = alert_distribution.get(4, 0) + alert_distribution.get(3, 0)
+    pct_green = (alert_distribution.get(1, 0) / total_municipalities * 100) if total_municipalities > 0 else 0
+    status_text = "Controlado" if pct_green > 90 else "Atencao"
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
-        st.metric(
-            "Total de Casos",
-            f"{total_cases:,}",
-            delta=None,
-        )
+        st.markdown(kpi_card_with_sparkline(
+            f"{total_cases:,}", "Total de Casos", cases_trend, color=ALERT_VERMELHO
+        ), unsafe_allow_html=True)
 
     with col2:
-        st.metric(
-            "Municípios",
-            total_municipalities,
-            delta=None,
-        )
+        st.markdown(kpi_card_with_sparkline(
+            str(total_municipalities), "Municipios Monitorados", [], color=COLOR_INFO
+        ), unsafe_allow_html=True)
 
     with col3:
-        st.metric(
-            "Rt Médio",
-            avg_rt,
-            delta="epidemia" if avg_rt > 1.0 else "controlado",
-        )
+        st.markdown(kpi_card_with_sparkline(
+            str(avg_rt), "Rt Medio", rt_trend, color=ALERT_LARANJA
+        ), unsafe_allow_html=True)
 
     with col4:
-        st.metric(
-            "Epidemia Ativa",
-            municipalities_in_epidemic,
-            delta=None,
-        )
+        st.markdown(kpi_card_with_sparkline(
+            str(municipalities_in_epidemic), "Epidemia Ativa", epidemic_trend, color=ALERT_VERMELHO
+        ), unsafe_allow_html=True)
 
     with col5:
-        pct_green = (alert_distribution.get(1, 0) / total_municipalities * 100) if total_municipalities > 0 else 0
-        status_text = "✅ Controlado" if pct_green > 90 else "⚠️ Atenção"
-        st.metric(
-            "Situação",
-            f"{pct_green:.0f}%",
-            delta=status_text,
-        )
+        st.markdown(kpi_card_with_sparkline(
+            f"{pct_green:.0f}%", f"Verde — {status_text}", pct_green_trend, color=COLOR_SUCCESS
+        ), unsafe_allow_html=True)
 
     st.markdown("---")
 
     # ── Section 2: Comparative disease analysis ──────────────
-    st.subheader("📊 Comparativo entre Doenças")
+    st.subheader("Comparativo entre Doencas")
 
     if not comparative.empty:
-        # Prepare data for stacked bar
-        alert_colors_by_level = {1: ALERT_VERDE, 2: ALERT_AMARELO, 3: ALERT_LARANJA, 4: ALERT_VERMELHO}
-
         fig_comp = go.Figure()
         for alert_level in [1, 2, 3, 4]:
             subset = comparative[comparative["nr_nivel_alerta"] == alert_level]
@@ -268,8 +262,8 @@ def render_epidemio_analytics(athena_service: AthenaService):
         fig_comp.update_layout(
             barmode="stack",
             height=CHART_HEIGHT,
-            xaxis_title="Doença",
-            yaxis_title="Municípios",
+            xaxis_title="Doenca",
+            yaxis_title="Municipios",
             hovermode="x unified",
         )
         fig_comp = apply_professional_theme(fig_comp)
@@ -277,11 +271,11 @@ def render_epidemio_analytics(athena_service: AthenaService):
 
     st.markdown("---")
 
-    # ── Section 3: Alert distribuution ──────────────────────
+    # ── Section 3: Alert distribution + Mesoregion ───────────
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("🚨 Distribuição de Alertas Atuais")
+        st.subheader("Distribuicao de Alertas Atuais")
         alert_counts = current_alerts["nr_nivel_alerta"].value_counts().sort_index()
         alert_labels = [ALERT_LEVELS.get(int(level), str(level)) for level in alert_counts.index]
         alert_colors = [alert_colors_by_level.get(int(level), "#999") for level in alert_counts.index]
@@ -296,18 +290,29 @@ def render_epidemio_analytics(athena_service: AthenaService):
         fig_alerts = apply_professional_theme(fig_alerts)
         st.plotly_chart(fig_alerts, use_container_width=True)
 
-    # ── Section 4: Mesoregion ranking ────────────────────────
+    # ── Section 4: Mesoregion — colored by alert level ───────
     with col2:
-        st.subheader("🗺️ Top Mesorregiões (por casos)")
+        st.subheader("Situacao por Mesorregiao")
         if not mesoregion_summary.empty:
-            top_meso = mesoregion_summary.nlargest(10, "total_cases")
+            top_meso = mesoregion_summary.nlargest(10, "total_cases").copy()
+            top_meso["nivel_label"] = top_meso["max_alert_level"].map(
+                lambda x: ALERT_LEVELS.get(int(x), "Verde")
+            )
+            alert_discrete_map = {v: alert_colors_by_level[k] for k, v in ALERT_LEVELS.items()}
+            category_order = list(ALERT_LEVELS.values())
+
             fig_meso = px.bar(
                 top_meso,
                 x="total_cases",
                 y="nm_mesorregiao",
-                color="avg_rt",
-                color_continuous_scale="RdYlGn_r",
-                labels={"total_cases": "Total de Casos", "nm_mesorregiao": "", "avg_rt": "Rt Médio"},
+                color="nivel_label",
+                color_discrete_map=alert_discrete_map,
+                category_orders={"nivel_label": category_order},
+                labels={
+                    "total_cases": "Total de Casos",
+                    "nm_mesorregiao": "",
+                    "nivel_label": "Nivel de Alerta",
+                },
                 height=CHART_HEIGHT,
                 orientation="h",
             )
@@ -317,18 +322,23 @@ def render_epidemio_analytics(athena_service: AthenaService):
 
     st.markdown("---")
 
-    # ── Section 5: Detailed mesoregion table ──────────────────
-    st.subheader("📋 Resumo por Mesorregião")
+    # ── Section 5: Mesoregion summary table ──────────────────
+    st.subheader("Resumo por Mesorregiao")
     if not mesoregion_summary.empty:
-        display_cols = ["nm_mesorregiao", "total_cases", "avg_rt", "max_alert_level", "municipalities_high_alert", "total_municipalities", "municipalities_epidemic"]
+        display_cols = [
+            "nm_mesorregiao", "total_cases", "avg_rt", "max_alert_level",
+            "municipalities_high_alert", "total_municipalities", "municipalities_epidemic"
+        ]
         display_df = mesoregion_summary[display_cols].copy()
-        display_df.columns = ["Mesorregião", "Casos", "Rt Médio", "Alerta Máx", "Mun. Alerta Alto", "Total Mun.", "Mun. Epidemia"]
-
+        display_df.columns = [
+            "Mesorregiao", "Casos", "Rt Medio", "Alerta Max",
+            "Mun. Alerta Alto", "Total Mun.", "Mun. Epidemia"
+        ]
         st.dataframe(
             display_df.style.format({
                 "Casos": "{:,.0f}",
-                "Rt Médio": "{:.2f}",
-                "Alerta Máx": "{:.0f}",
+                "Rt Medio": "{:.2f}",
+                "Alerta Max": "{:.0f}",
             }),
             use_container_width=True,
             height=300,
@@ -339,18 +349,16 @@ def render_epidemio_analytics(athena_service: AthenaService):
     # ── Section 6: Export ────────────────────────────────────
     col1, col2 = st.columns(2)
     with col1:
-        csv_data = current_alerts.to_csv(index=False)
         st.download_button(
-            label="📥 Exportar Alertas (CSV)",
-            data=csv_data,
+            label="Exportar Alertas (CSV)",
+            data=current_alerts.to_csv(index=False),
             file_name=f"alertas_{selected_disease}.csv",
             mime="text/csv",
         )
     with col2:
-        csv_data = mesoregion_summary.to_csv(index=False)
         st.download_button(
-            label="📥 Exportar Mesorregiões (CSV)",
-            data=csv_data,
+            label="Exportar Mesorregioes (CSV)",
+            data=mesoregion_summary.to_csv(index=False),
             file_name=f"mesoregiao_{selected_disease}.csv",
             mime="text/csv",
         )
