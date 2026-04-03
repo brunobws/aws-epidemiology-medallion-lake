@@ -17,7 +17,7 @@ WITH pop_latest AS (
             cd_geocode,
             vl_populacao,
             ROW_NUMBER() OVER (PARTITION BY cd_geocode ORDER BY dt_ano_referencia DESC) AS rn
-        FROM tb_populacao
+        FROM silver.tb_populacao
     )
     WHERE rn = 1
 )
@@ -55,9 +55,9 @@ SELECT
     a.ds_doenca,
     a.dt_semana_epidemiologica
 
-FROM tb_alertas a
+FROM silver.tb_alertas a
 
-LEFT JOIN tb_municipios m
+LEFT JOIN silver.tb_municipios m
     ON a.cd_geocode = m.cd_geocode
 
 LEFT JOIN pop_latest p

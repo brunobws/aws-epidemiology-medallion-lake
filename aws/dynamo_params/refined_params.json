@@ -1,22 +1,20 @@
 [
     {
-        "target_table": "gold_tb_ft_incidencia",
+        "target_table": "gold_tb_ft_alerta_semanal",
         "layer": "gold",
-        "mode": "overwrite"
+        "mode": "overwrite",
+        "partition_column": "dt_semana_epidemiologica"
     },
     {
-        "target_table": "gold_tb_ft_alertas",
+        "target_table": "gold_tb_ft_perfil_demografico",
         "layer": "gold",
-        "mode": "overwrite"
+        "mode": "overwrite",
+        "partition_column": "nr_ano_notificacao"
     },
     {
-        "target_table": "gold_tb_ft_ranking",
+        "target_table": "gold_tb_ft_ranking_anual",
         "layer": "gold",
-        "mode": "overwrite"
-    },
-    {
-        "target_table": "gold_tb_ft_serie_historica",
-        "layer": "gold",
-        "mode": "overwrite"
+        "mode": "overwrite",
+        "partition_column": "nr_ano_epi"
     }
 ]

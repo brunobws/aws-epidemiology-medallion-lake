@@ -59,10 +59,10 @@ S3_BUCKET     = f"{S3_BUCKET}-{ENV}"
 SOURCE_BASE_URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN"
 
 # Disease configuration: (disease_name, url_path, file_prefix)
+# NOTE: Zika removed from OpenDataSUS — files return 403 (Access Denied)
 DISEASE_CONFIG = [
     ("dengue",       "Dengue",       "DENGBR"),
     ("chikungunya",  "Chikungunya",  "CHIKBR"),
-    ("zika",         "Zika",         "ZIKABR"),
 ]
 
 TIMEOUT       = int(os.getenv("TIMEOUT", 120))                     # Request timeout in seconds (larger for big files)
@@ -114,8 +114,8 @@ def download_bytes(url: str) -> bytes:
                 print(f"[INFO] Downloaded {len(resp.data) / (1024*1024):.1f} MB from {url}")
                 return resp.data
 
-            if resp.status == 404:
-                print(f"[WARNING] File not found (404): {url}")
+            if resp.status in (404, 403):
+                print(f"[WARNING] File not available ({resp.status}): {url}")
                 return None
 
             wait = RETRY_BACKOFF ** attempt

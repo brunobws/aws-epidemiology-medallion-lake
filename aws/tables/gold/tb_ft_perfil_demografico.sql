@@ -5,7 +5,7 @@
 -- Uso: Pirâmide etária, análise de mortalidade, perfil epidemiológico por grupo populacional
 
 
-CREATE EXTERNAL TABLE IF NOT EXISTS `gold_tb_ft_perfil_demografico`(
+CREATE EXTERNAL TABLE IF NOT EXISTS `tb_ft_perfil_demografico`(
   `cd_geocode_ibge`      int     COMMENT 'Código IBGE 6 dígitos do município (id_municip do SINAN)',
   `nm_municipio`         string  COMMENT 'Nome do município — NULL se código não mapeado em tb_municipios',
   `nm_microrregiao`      string  COMMENT 'Microrregião IBGE do município',

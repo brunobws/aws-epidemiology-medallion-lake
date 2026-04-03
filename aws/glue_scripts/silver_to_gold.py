@@ -230,14 +230,14 @@ try:
     spark.conf.set("spark.sql.parquet.int96AsTimestamp",       "false")
     spark.conf.set("spark.sql.parquet.enableVectorizedReader", "false")
 
-    if mode != 'merge':
+    if mode != 'iceberg':
         # Write the DataFrame to the Iceberg table registered in the Glue catalog
         logger.add_info(target_athena_table=trgt_tbl_athena, write_mode=mode)
         (
             df.write
             .mode(mode)
             .option("overwriteSchema", "true")
-            .insertInto(f"glue_catalog.{trgt_tbl_athena}")
+            .insertInto(f"{trgt_tbl_athena}")
         )
         logger.time_execution_step('table_insert')
 

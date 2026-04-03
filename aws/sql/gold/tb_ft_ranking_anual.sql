@@ -18,7 +18,7 @@ WITH pop_latest AS (
             cd_geocode,
             vl_populacao,
             ROW_NUMBER() OVER (PARTITION BY cd_geocode ORDER BY dt_ano_referencia DESC) AS rn
-        FROM tb_populacao
+        FROM silver.tb_populacao
     )
     WHERE rn = 1
 
@@ -42,9 +42,9 @@ base AS (
         SUM(CASE WHEN a.vl_rt > 1.0          THEN 1 ELSE 0 END)        AS nr_semanas_rt_acima_1,
         ROUND(AVG(a.vl_rt), 4)                                         AS vl_rt_medio
 
-    FROM tb_alertas a
+    FROM silver.tb_alertas a
 
-    LEFT JOIN tb_municipios m
+    LEFT JOIN silver.tb_municipios m
         ON a.cd_geocode = m.cd_geocode
 
     LEFT JOIN pop_latest p

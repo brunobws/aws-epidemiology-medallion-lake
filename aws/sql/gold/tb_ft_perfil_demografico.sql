@@ -39,9 +39,9 @@ SELECT
     YEAR(n.dt_notific)                                                  AS nr_ano_notificacao,
     MONTH(n.dt_notific)                                                 AS nr_mes_notificacao
 
-FROM tb_notificacoes n
+FROM silver.tb_notificacoes n
 
-LEFT JOIN tb_municipios m
+LEFT JOIN silver.tb_municipios m
     ON CAST(m.cd_geocode / 10 AS INT) = n.id_municip
 
 WHERE n.sg_uf = 35

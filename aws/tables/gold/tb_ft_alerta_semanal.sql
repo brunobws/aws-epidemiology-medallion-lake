@@ -4,7 +4,7 @@
 -- Uso: Mapa de alertas, série temporal, situação atual, comparativo entre municípios
 
 
-CREATE EXTERNAL TABLE IF NOT EXISTS `gold_tb_ft_alerta_semanal`(
+CREATE EXTERNAL TABLE IF NOT EXISTS `tb_ft_alerta_semanal`(
   `cd_geocode`        int     COMMENT 'Código geocódigo IBGE do município (7 dígitos)',
   `nm_municipio`      string  COMMENT 'Nome do município',
   `nm_microrregiao`   string  COMMENT 'Microrregião IBGE (divisão administrativa intermediária)',

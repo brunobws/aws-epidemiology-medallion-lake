@@ -4,7 +4,7 @@
 -- Uso: Top-N municípios mais afetados, comparativo regional anual, identificação de hotspots
 
 
-CREATE EXTERNAL TABLE IF NOT EXISTS `gold_tb_ft_ranking_anual`(
+CREATE EXTERNAL TABLE IF NOT EXISTS `tb_ft_ranking_anual`(
   `cd_geocode`                    int     COMMENT 'Código geocódigo IBGE do município (7 dígitos)',
   `nm_municipio`                  string  COMMENT 'Nome do município',
   `nm_microrregiao`               string  COMMENT 'Microrregião IBGE',
