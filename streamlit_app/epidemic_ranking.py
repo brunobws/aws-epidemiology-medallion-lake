@@ -99,39 +99,40 @@ def fetch_available_years(athena_service: AthenaService, disease: str) -> list:
         return [2026]
 
 
-def render_epidemic_ranking(athena_service: AthenaService):
+def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     """Render ranking and hotspots tab."""
 
-    # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### Filtros Ranking")
-    selected_disease = st.sidebar.selectbox(
-        "Doenca",
-        DISEASES,
-        format_func=lambda x: DISEASES_PT.get(x, x),
-        key="rank_disease"
-    )
+    # ── Fetch available years ────────────────────────────────────
+    years = fetch_available_years(athena_service, disease)
 
-    years = fetch_available_years(athena_service, selected_disease)
-    selected_year = st.sidebar.selectbox("Ano epidemiologico", years, key="rank_year")
+    # ── Filters in container at top ──────────────────────────────
+    st.markdown("### Filtros")
+    col_year, col_top_n = st.columns(2)
 
-    top_n = st.sidebar.slider("Top N municipios", 10, 50, 20, key="rank_top_n")
+    with col_year:
+        selected_year = st.selectbox("Ano epidemiológico", years, key="rank_year")
+
+    with col_top_n:
+        top_n = st.slider("Top N municípios", 5, 50, 20, key="rank_top_n")
+
+    st.markdown("---")
 
     # ── Load data ────────────────────────────────────────────
     with st.spinner("Carregando ranking..."):
-        df = fetch_ranking_data(athena_service, selected_disease, selected_year)
+        df = fetch_ranking_data(athena_service, disease, selected_year)
 
     if df.empty:
         st.warning("Nenhum dado de ranking disponivel.")
         return
 
-    st.subheader(f"Ranking — {DISEASES_PT[selected_disease]} ({selected_year})")
+    st.subheader(f"Ranking — {DISEASES_PT[disease]} ({selected_year})")
     st.markdown("---")
 
     # ── Chart 1: Top-N municipalities by incidence ────────────
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader(f"Top {top_n} Municipios por Incidencia")
+        st.subheader(f"Top {top_n} Municípios por Incidência")
         top_df = df.nlargest(top_n, "vl_incidencia_acumulada")
 
         fig_top = px.bar(
@@ -141,9 +142,9 @@ def render_epidemic_ranking(athena_service: AthenaService):
             color="vl_rt_medio",
             color_continuous_scale="RdYlGn_r",
             labels={
-                "vl_incidencia_acumulada": "Incidencia (por 100k)",
+                "vl_incidencia_acumulada": "Incidência (por 100k)",
                 "nm_municipio": "",
-                "vl_rt_medio": "Rt Medio",
+                "vl_rt_medio": "Rt Médio",
             },
             height=max(CHART_HEIGHT, top_n * 22),
             orientation="h",
@@ -153,7 +154,7 @@ def render_epidemic_ranking(athena_service: AthenaService):
 
     # ── Chart 2: Treemap by mesoregion ────────────────────────
     with col2:
-        st.subheader("Distribuicao Regional (Treemap)")
+        st.subheader("Distribuição Regional (Treemap)")
 
         fig_treemap = px.treemap(
             df,
@@ -235,6 +236,6 @@ def render_epidemic_ranking(athena_service: AthenaService):
     st.download_button(
         label="📥 Exportar Ranking (CSV)",
         data=csv_data,
-        file_name=f"ranking_{selected_disease}_{selected_year}.csv",
+        file_name=f"ranking_{disease}_{selected_year}.csv",
         mime="text/csv",
     )

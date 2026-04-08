@@ -213,3 +213,36 @@ def kpi_card_with_sparkline(
         </div>
     </div>
     """
+
+
+####################################################################
+# TYPOGRAPHY HELPERS
+####################################################################
+def section_title(text: str) -> str:
+    """
+    Estilo de título de seção (H2).
+    Renderiza com espaçamento vertical e formatação markdown.
+    
+    Uso:
+        st.markdown(section_title("Minha Seção"))
+    """
+    return f"""
+
+## {text}
+
+"""
+
+
+def chart_title(text: str) -> str:
+    """
+    Estilo de título de gráfico (H3).
+    Renderiza com espaçamento vertical e formatação markdown.
+    
+    Uso:
+        st.markdown(chart_title("Meu Gráfico"))
+    """
+    return f"""
+
+### {text}
+
+"""

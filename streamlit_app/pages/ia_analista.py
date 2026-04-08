@@ -156,10 +156,10 @@ with col_chat:
     <p class="q-section">Perguntas de exemplo</p>
     <div style="display:flex; flex-wrap:wrap; gap:0; margin-bottom:20px;">
         <span class="q-chip">Qual cidade teve mais casos de dengue em 2024?</span>
-        <span class="q-chip">Quais municipios estao em nivel vermelho agora?</span>
-        <span class="q-chip">Qual a incidencia media na Grande SP esta semana?</span>
-        <span class="q-chip">Mostre o Rt das mesorregioes com epidemia ativa</span>
-        <span class="q-chip">Perfil demografico das notificacoes de chikungunya</span>
+        <span class="q-chip">Quais municípios estão em nível vermelho agora?</span>
+        <span class="q-chip">Qual a incidência média na Grande SP esta semana?</span>
+        <span class="q-chip">Mostre o Rt das mesorregiões com epidemia ativa</span>
+        <span class="q-chip">Perfil demográfico das notificações de chikungunya</span>
         <span class="q-chip">Ranking de incidencia em 2023 vs 2024</span>
     </div>
     """, unsafe_allow_html=True)
@@ -191,10 +191,10 @@ Com base nos dados da semana epidemiológica mais recente disponível no Data La
 O **Rt médio estadual** na última semana foi de **1.34**, indicando transmissão crescente.
 
 - Semana anterior: Rt = 1.18 (+13.6%)
-- Municipios com Rt > 1: **312 de 645** (48.4%)
-- Municipios em epidemia ativa: **87** *(fl_epidemia = 1)*
+- Municípios com Rt > 1: **312 de 645** (48.4%)
+- Municípios em epidemia ativa: **87** *(fl_epidemia = 1)*
 
-O aumento é consistente com o historico sazonial do periodo — a Serie Temporal mostra que o pico tipicamente ocorre nas proximas 3 a 5 semanas.
+O aumento é consistente com o histórico sazonal do período — a Série Temporal mostra que o pico tipicamente ocorre nas próximas 3 a 5 semanas.
         """)
 
     # ── Disabled chat input ───────────────────────────────────────
@@ -226,12 +226,12 @@ O aumento é consistente com o historico sazonial do periodo — a Serie Tempora
     </style>
     <div class="chat-disabled-wrap">
         <div class="chat-disabled-overlay">
-            <span class="chat-disabled-label">Disponivel em breve</span>
+            <span class="chat-disabled-label">Disponível em breve</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.chat_input("Pergunte sobre os dados epidemiologicos...", disabled=True)
+    st.chat_input("Pergunte sobre os dados epidemiológicos...", disabled=True)
 
 
 with col_info:
@@ -356,11 +356,11 @@ with col_info:
         </div>
         <div class="cap-item">
             <span class="cap-icon">👥</span>
-            Perfis demograficos e desfechos
+            Perfis demográficos e desfechos
         </div>
         <div class="cap-item">
             <span class="cap-icon">🔍</span>
-            Consultas por municipio, mesorregiao ou SE
+            Consultas por município, mesorregião ou SE
         </div>
         <div class="cap-item">
             <span class="cap-icon">⚠️</span>

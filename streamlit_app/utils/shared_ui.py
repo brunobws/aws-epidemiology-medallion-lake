@@ -39,26 +39,14 @@ def render_header():
     """Compact professional header."""
     st.markdown(f"""
     <div style="padding: 8px 0 10px 0; margin-bottom: 12px; border-bottom: 1px solid {COLOR_BORDER};">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div style="display: flex; justify-content: flex-start; align-items: flex-start;">
             <div>
                 <h3 style="margin: 0; font-size: 18px; color: {COLOR_DARK_GRAY}; font-weight: 600;">
-                    ArboVigilancia SP
+                    ArboVigilância SP
                 </h3>
                 <p style="margin: 0; font-size: 11px; color: {COLOR_LIGHT_GRAY}; letter-spacing: 0.5px;">
-                    Vigilancia Epidemiologica de Arboviroses
+                    Vigilância Epidemiológica de Arboviroses
                 </p>
-            </div>
-            <div style="text-align: right; white-space: nowrap;">
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: {COLOR_DARK_GRAY}; font-weight: 500;">
-                    Bruno William da Silva
-                </p>
-                <div style="font-size: 12px;">
-                    <a href="https://github.com/brunobws/aws-epidemiology-medallion-lake" target="_blank"
-                       style="color: {COLOR_ORANGE}; text-decoration: none; font-weight: 600;">GitHub</a>
-                    &nbsp;|&nbsp;
-                    <a href="https://www.linkedin.com/in/brunowsilva/" target="_blank"
-                       style="color: {COLOR_ORANGE}; text-decoration: none; font-weight: 600;">LinkedIn</a>
-                </div>
             </div>
         </div>
     </div>
@@ -66,28 +54,56 @@ def render_header():
 
 
 def render_sidebar():
-    """Sidebar with minimal controls."""
+    """Sidebar with global disease filter and controls."""
+    from config import DISEASES, DISEASES_PT
+    from datetime import datetime
+
     with st.sidebar:
+        st.markdown("### 🦟 Filtro Global")
+
+        # Global disease selector
+        disease = st.selectbox(
+            "Doença",
+            DISEASES,
+            format_func=lambda x: DISEASES_PT.get(x, x),
+            key="global_disease"
+        )
+
+        st.divider()
+
+        # Update button
         if st.button("Atualizar Dados", use_container_width=True):
             clear_all_caches()
             st.rerun()
 
         st.divider()
 
+        # Last update timestamp
+        st.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+
         st.caption(
-            "Vigilancia epidemiologica para arboviroses "
-            "(dengue, chikungunya, zika) em Sao Paulo. "
+            "Vigilância epidemiológica para arboviroses "
+            "(dengue, chikungunya, zika) em São Paulo. "
             "Dados da camada Gold do Data Lake."
         )
 
+    return disease
+
 
 def render_footer():
-    """Professional footer."""
+    """Professional footer with developer info and links."""
     st.markdown(f"""
     <div style="border-top: 1px solid {COLOR_BORDER}; padding: 20px 0; margin-top: 40px;
                 text-align: center; color: {COLOR_LIGHT_GRAY}; font-size: 12px;">
-        <p style="margin-bottom: 5px;">ArboVigilancia SP — Medallion Architecture Data Lake</p>
-        <p>Desenvolvido por Bruno William da Silva</p>
+        <p style="margin-bottom: 5px;">ArboVigilância SP — Medallion Architecture Data Lake</p>
+        <p style="margin-bottom: 8px;">Desenvolvido por Bruno William da Silva</p>
+        <div style="font-size: 11px;">
+            <a href="https://github.com/brunobws/aws-epidemiology-medallion-lake" target="_blank"
+               style="color: {COLOR_ORANGE}; text-decoration: none; font-weight: 600;">GitHub</a>
+            &nbsp;|&nbsp;
+            <a href="https://www.linkedin.com/in/brunowsilva/" target="_blank"
+               style="color: {COLOR_ORANGE}; text-decoration: none; font-weight: 600;">LinkedIn</a>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 

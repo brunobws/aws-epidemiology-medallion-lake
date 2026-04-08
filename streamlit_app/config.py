@@ -24,9 +24,9 @@ import os
 ####################################################################
 # APPLICATION METADATA
 ####################################################################
-APP_NAME = "ArboVigilancia SP"
+APP_NAME = "ArboVigilância SP"
 APP_VERSION = "1.0.0"
-APP_DESCRIPTION = "Painel de vigilancia epidemiologica de arboviroses em Sao Paulo"
+APP_DESCRIPTION = "Painel de vigilância epidemiológica de arboviroses em São Paulo"
 APP_ICON = "🦟"
 
 

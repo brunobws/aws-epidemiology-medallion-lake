@@ -101,30 +101,29 @@ def fetch_available_years(athena_service: AthenaService, disease: str) -> list:
         return [2026]
 
 
-def render_epidemic_timeseries(athena_service: AthenaService):
+def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
     """Render time series analysis tab."""
 
-    # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### Filtros Serie Temporal")
-    selected_disease = st.sidebar.selectbox(
-        "Doenca",
-        DISEASES,
-        format_func=lambda x: DISEASES_PT.get(x, x),
-        key="ts_disease"
-    )
+    # ── Fetch available years ────────────────────────────────────
+    years = fetch_available_years(athena_service, disease)
 
-    years = fetch_available_years(athena_service, selected_disease)
-    selected_year = st.sidebar.selectbox("Ano epidemiologico", years, key="ts_year")
+    # ── Filters in container at top ──────────────────────────────
+    st.markdown("### Filtros")
+    col_year = st.columns(1)[0]
+    with col_year:
+        selected_year = st.selectbox("Ano epidemiológico", years, key="ts_year")
+
+    st.markdown("---")
 
     # ── Load data ────────────────────────────────────────────
-    with st.spinner("Carregando serie temporal..."):
-        df = fetch_weekly_series(athena_service, selected_disease, selected_year)
+    with st.spinner("Carregando série temporal..."):
+        df = fetch_weekly_series(athena_service, disease, selected_year)
 
     if df.empty:
         st.warning("Nenhum dado disponivel para o periodo selecionado.")
         return
 
-    st.subheader(f"Serie Temporal — {DISEASES_PT[selected_disease]} ({selected_year})")
+    st.subheader(f"Série Temporal — {DISEASES_PT[disease]} ({selected_year})")
     st.markdown("---")
 
     num_weeks = len(df)
@@ -243,11 +242,10 @@ def render_epidemic_timeseries(athena_service: AthenaService):
         height=300,
     )
 
-    # ── Export ────────────────────────────────────────────────
     csv_data = df.to_csv(index=False)
     st.download_button(
         label="📥 Exportar Serie Temporal (CSV)",
         data=csv_data,
-        file_name=f"serie_temporal_{selected_disease}_{selected_year}.csv",
+        file_name=f"serie_temporal_{disease}_{selected_year}.csv",
         mime="text/csv",
     )

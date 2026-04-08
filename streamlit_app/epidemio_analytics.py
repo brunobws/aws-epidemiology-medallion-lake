@@ -168,84 +168,65 @@ def fetch_kpi_trends(athena_service: AthenaService, disease: str) -> pd.DataFram
         return pd.DataFrame()
 
 
-def render_epidemio_analytics(athena_service: AthenaService):
+def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     """Main render function for epidemiological analytics."""
 
-    # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### Filtros")
-    selected_disease = st.sidebar.selectbox(
-        "Doença",
-        DISEASES,
-        format_func=lambda x: DISEASES_PT.get(x, x),
-        key="epi_disease"
-    )
+    # ── No sidebar filters — use global disease ──────────────────
 
     # ── Load data ────────────────────────────────────────────
     with st.spinner("Carregando dados de alertas..."):
-        current_alerts = fetch_current_alerts(athena_service, selected_disease)
+        current_alerts = fetch_current_alerts(athena_service, disease)
         comparative = fetch_comparative_alerts(athena_service)
-        mesoregion_summary = fetch_mesoregion_summary(athena_service, selected_disease)
-        kpi_trends = fetch_kpi_trends(athena_service, selected_disease)
+        mesoregion_summary = fetch_mesoregion_summary(athena_service, disease)
+        kpi_trends = fetch_kpi_trends(athena_service, disease)
 
     if current_alerts.empty:
         st.warning("Nenhum dado de alerta disponivel para o periodo selecionado.")
         return
 
-    st.title(f"Visao Geral — {DISEASES_PT[selected_disease]}")
+    st.title(f"Visão Geral — {DISEASES_PT[disease]}")
     st.markdown("---")
 
-    # ── Trend series (oldest → newest for sparklines) ────────
+    # ── Section 1: KPI cards ────────────────────────────────
     alert_colors_by_level = {1: ALERT_VERDE, 2: ALERT_AMARELO, 3: ALERT_LARANJA, 4: ALERT_VERMELHO}
 
-    if not kpi_trends.empty:
-        trends_sorted = kpi_trends.sort_values("dt_semana_epidemiologica")
-        cases_trend = trends_sorted["total_cases"].tolist()
-        rt_trend = trends_sorted["avg_rt"].tolist()
-        epidemic_trend = trends_sorted["municipalities_epidemic"].tolist()
-        pct_green_trend = trends_sorted["pct_green"].tolist()
-    else:
-        cases_trend = rt_trend = epidemic_trend = pct_green_trend = []
-
-    # ── Section 1: KPI cards with sparklines ─────────────────
     total_cases = int(current_alerts["vl_casos"].sum())
     total_municipalities = len(current_alerts)
     avg_rt = round(current_alerts["vl_rt"].mean(), 2)
     municipalities_in_epidemic = int(current_alerts[current_alerts["fl_epidemia"] == 1].shape[0])
     alert_distribution = current_alerts["nr_nivel_alerta"].value_counts().to_dict()
     pct_green = (alert_distribution.get(1, 0) / total_municipalities * 100) if total_municipalities > 0 else 0
-    status_text = "Controlado" if pct_green > 90 else "Atencao"
+    status_text = "Controlado" if pct_green > 90 else "Atenção"
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5 = st.columns(5, gap="small")
 
     with col1:
-        st.markdown(kpi_card_with_sparkline(
-            f"{total_cases:,}", "Total de Casos", cases_trend, color=ALERT_VERMELHO
-        ), unsafe_allow_html=True)
+        st.metric("Total de Casos", f"{total_cases:,}")
 
     with col2:
-        st.markdown(kpi_card_with_sparkline(
-            str(total_municipalities), "Municipios Monitorados", [], color=COLOR_INFO
-        ), unsafe_allow_html=True)
+        st.metric("Municípios Monitorados", total_municipalities)
 
     with col3:
-        st.markdown(kpi_card_with_sparkline(
-            str(avg_rt), "Rt Medio", rt_trend, color=ALERT_LARANJA
-        ), unsafe_allow_html=True)
+        st.metric(
+            "Rt Médio",
+            avg_rt,
+            help="Rt < 1 indica que a doença está em declínio. Rt > 1 indica crescimento. Limiar epidêmico: Rt = 1."
+        )
 
     with col4:
-        st.markdown(kpi_card_with_sparkline(
-            str(municipalities_in_epidemic), "Epidemia Ativa", epidemic_trend, color=ALERT_VERMELHO
-        ), unsafe_allow_html=True)
+        st.metric(
+            "Epidemia Ativa",
+            municipalities_in_epidemic,
+            help="Número de municípios com classificação de epidemia ativa segundo critérios do Ministério da Saúde."
+        )
 
     with col5:
-        st.markdown(kpi_card_with_sparkline(
-            f"{pct_green:.0f}%", f"Verde — {status_text}", pct_green_trend, color=COLOR_SUCCESS
-        ), unsafe_allow_html=True)
+        st.metric("Verde — Controlado", f"{pct_green:.0f}%")
 
     st.markdown("---")
 
     # ── Section 2: Comparative disease analysis ──────────────
-    st.subheader("Comparativo entre Doencas")
+    st.subheader("Comparativo entre Doenças")
 
     if not comparative.empty:
         fig_comp = go.Figure()
@@ -275,7 +256,7 @@ def render_epidemio_analytics(athena_service: AthenaService):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Distribuicao de Alertas Atuais")
+        st.subheader("Distribuição de Alertas Atuais")
         alert_counts = current_alerts["nr_nivel_alerta"].value_counts().sort_index()
         alert_labels = [ALERT_LEVELS.get(int(level), str(level)) for level in alert_counts.index]
         alert_colors = [alert_colors_by_level.get(int(level), "#999") for level in alert_counts.index]
@@ -292,7 +273,7 @@ def render_epidemio_analytics(athena_service: AthenaService):
 
     # ── Section 4: Mesoregion — colored by alert level ───────
     with col2:
-        st.subheader("Situacao por Mesorregiao")
+        st.subheader("Situação por Mesorregião")
         if not mesoregion_summary.empty:
             top_meso = mesoregion_summary.nlargest(10, "total_cases").copy()
             top_meso["nivel_label"] = top_meso["max_alert_level"].map(
@@ -352,13 +333,13 @@ def render_epidemio_analytics(athena_service: AthenaService):
         st.download_button(
             label="Exportar Alertas (CSV)",
             data=current_alerts.to_csv(index=False),
-            file_name=f"alertas_{selected_disease}.csv",
+            file_name=f"alertas_{disease}.csv",
             mime="text/csv",
         )
     with col2:
         st.download_button(
             label="Exportar Mesorregioes (CSV)",
             data=mesoregion_summary.to_csv(index=False),
-            file_name=f"mesoregiao_{selected_disease}.csv",
+            file_name=f"mesoregiao_{disease}.csv",
             mime="text/csv",
         )

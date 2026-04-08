@@ -98,30 +98,29 @@ def fetch_available_years(athena_service: AthenaService, disease: str) -> list:
         return [2026]
 
 
-def render_epidemic_demographic(athena_service: AthenaService):
+def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     """Render demographic profile tab."""
 
-    # ── Sidebar filters ──────────────────────────────────────
-    st.sidebar.markdown("### Filtros Demografico")
-    selected_disease = st.sidebar.selectbox(
-        "Doenca",
-        DISEASES,
-        format_func=lambda x: DISEASES_PT.get(x, x),
-        key="demo_disease"
-    )
+    # ── Fetch available years ────────────────────────────────────
+    years = fetch_available_years(athena_service, disease)
 
-    years = fetch_available_years(athena_service, selected_disease)
-    selected_year = st.sidebar.selectbox("Ano notificacao", years, key="demo_year")
+    # ── Filters in container at top ──────────────────────────────
+    st.markdown("### Filtros")
+    col_year = st.columns(1)[0]
+    with col_year:
+        selected_year = st.selectbox("Ano de notificação", years, key="demo_year")
+
+    st.markdown("---")
 
     # ── Load data ────────────────────────────────────────────
-    with st.spinner("Carregando perfil demografico..."):
-        df = fetch_demographic_data(athena_service, selected_disease, selected_year)
+    with st.spinner("Carregando perfil demográfico..."):
+        df = fetch_demographic_data(athena_service, disease, selected_year)
 
     if df.empty:
-        st.warning("Nenhum dado demografico disponivel.")
+        st.warning("Nenhum dado demográfico disponível.")
         return
 
-    st.subheader(f"Perfil Demografico — {DISEASES_PT[selected_disease]} ({selected_year})")
+    st.subheader(f"Perfil Demográfico — {DISEASES_PT[disease]} ({selected_year})")
     st.markdown("---")
 
     # ── KPIs ──────────────────────────────────────────────────
@@ -136,7 +135,7 @@ def render_epidemic_demographic(athena_service: AthenaService):
 
     k1, k2, k3, k4, k5 = st.columns(5)
     with k1:
-        st.metric("Notificacoes", f"{total_notif:,}")
+        st.metric("Notificações", f"{total_notif:,}")
     with k2:
         st.metric("Confirmados", f"{total_conf:,}")
     with k3:
@@ -281,6 +280,6 @@ def render_epidemic_demographic(athena_service: AthenaService):
     st.download_button(
         label="📥 Exportar Perfil Demografico (CSV)",
         data=csv_data,
-        file_name=f"demografico_{selected_disease}_{selected_year}.csv",
+        file_name=f"demografico_{disease}_{selected_year}.csv",
         mime="text/csv",
     )
