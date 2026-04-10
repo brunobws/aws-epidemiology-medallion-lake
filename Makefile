@@ -49,9 +49,10 @@ clean:
 
 ec2-setup:
 	@echo "Installing Docker dependencies..."
-	sudo yum update -y && sudo yum install -y git docker
-	sudo usermod -aG docker ec2-user
+	sudo apt update -y && sudo apt install -y git docker.io docker-compose
+	sudo usermod -aG docker $$USER
 	sudo systemctl start docker
+	sudo systemctl enable docker
 	@echo "✓ Docker setup complete. Run: newgrp docker"
 
 ec2-deploy:
