@@ -121,7 +121,12 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
         st.warning("Nenhum dado demográfico disponível.")
         return
 
-    st.subheader(f"Perfil Demográfico — {DISEASES_PT[disease]} ({selected_year})")
+    st.markdown(f"""
+    <h2 style="text-align: center; font-size: 1.2rem; color: #333; font-weight: 300;">
+    {DISEASES_PT[disease]} · {selected_year}
+    </h2>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: -10px;"><b>Quem está sendo infectado? Onde? Com que intensidade?</b></p>
+    """, unsafe_allow_html=True)
     st.divider()
     st.write("")  # Spacing
 
@@ -141,11 +146,11 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     with k2:
         st.metric("Confirmados", f"{total_conf:,}")
     with k3:
-        st.metric("Taxa Letalidade", f"{lethality_rate}%")
+        st.metric("Letalidade", f"{lethality_rate}%", help="Óbitos / Confirmados")
     with k4:
-        st.metric("Taxa Cura", f"{cure_rate}%")
+        st.metric("Cura", f"{cure_rate}%", help="Curados / Confirmados")
     with k5:
-        st.metric("Confirmação", f"{conf_rate}%")
+        st.metric("Confirmação", f"{conf_rate}%", help="Confirmados / Notificados")
 
     st.divider()
     st.write("")  # Spacing
@@ -193,6 +198,11 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
 
     fig_pyr = apply_professional_theme(fig_pyr)
     st.plotly_chart(fig_pyr, use_container_width=True)
+    
+    st.caption(
+        "💡 A distribuição entre sexos varia por doença. Alguns arbovírus afetam mais mulheres, outros afetam homens e mulheres igualmente. "
+        "Faixas etárias diferentes tém riscos diferentes — alguns vírus são mais graves em idosos, outros em crianças."
+    )
 
     st.divider()
     st.write("")  # Spacing
@@ -201,7 +211,7 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### Desfecho Clínico por Faixa Etária")
+        st.markdown("#### Desfecho: Cura, Óbito ou Outro")
         outcome = df.groupby("ds_faixa_etaria").agg(
             curas=("nr_curas", "sum"),
             obitos=("nr_obitos", "sum"),
@@ -231,9 +241,14 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
         )
         fig_outcome = apply_professional_theme(fig_outcome)
         st.plotly_chart(fig_outcome, use_container_width=True)
+        
+        st.caption(
+            "💡 Nem todo confirmado resulta em cura registrada — alguns podem estar em seguimento, "
+            "abandonar acompanhamento, ou migrar. Por isso não somam 100%."
+        )
 
     with col2:
-        st.markdown("#### Notificações por Sexo e Faixa Etária")
+        st.markdown("#### Casos por Sexo e Idade")
         sex_age = df[df["cs_sexo"].isin(["M", "F"])].groupby(
             ["ds_faixa_etaria", "cs_sexo"]
         )["nr_notificacoes"].sum().reset_index()
@@ -277,13 +292,18 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     )
     fig_heat = apply_professional_theme(fig_heat)
     st.plotly_chart(fig_heat, use_container_width=True)
+    
+    st.caption(
+        "💡 Cores mais quentes (vermelho) = mais casos naquele més e região. "
+        "Algumas doenças são sazonais (maior transmissão em certas épocas)."
+    )
 
     st.markdown("---")
 
     # ── Export ────────────────────────────────────────────────
     csv_data = df.to_csv(index=False)
     st.download_button(
-        label="📥 Exportar Perfil Demografico (CSV)",
+        label="📺 Exportar Perfil Demográfico (CSV)",
         data=csv_data,
         file_name=f"demografico_{disease}_{selected_year}.csv",
         mime="text/csv",

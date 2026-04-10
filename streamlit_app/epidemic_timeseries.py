@@ -124,7 +124,12 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
         st.warning("Nenhum dado disponivel para o periodo selecionado.")
         return
 
-    st.subheader(f"Série Temporal — {DISEASES_PT[disease]} ({selected_year})")
+    st.markdown(f"""
+    <h2 style="text-align: center; font-size: 1.2rem; color: #333; font-weight: 300;">
+    {DISEASES_PT[disease]} · {selected_year}
+    </h2>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: -10px;"><b>Como a doença evoluiu semana a semana?</b></p>
+    """, unsafe_allow_html=True)
     st.divider()
     st.write("")  # Spacing
 
@@ -156,6 +161,11 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
     )
     fig_cases = apply_professional_theme(fig_cases)
     st.plotly_chart(fig_cases, use_container_width=True)
+    
+    st.caption(
+        "💡 Quando a linha contínua fica acima da tracejada, significa que estamos tendo MAIS casos do que o modelo esperava — situação pior. "
+        "Quando fica abaixo, estamos com MENOS casos — situação melhor que o previsto."
+    )
 
     st.divider()
     st.write("")  # Spacing
@@ -166,7 +176,7 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### Distribuição de Alertas por Semana")
+        st.markdown("#### Quantos municípios em cada nível?")
 
         if num_weeks <= 1:
             st.info("⚠️ Apenas 1 semana disponível. Gráfico requer múltiplas semanas.")
@@ -210,6 +220,11 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
             )
             fig_alerts = apply_professional_theme(fig_alerts)
             st.plotly_chart(fig_alerts, use_container_width=True)
+            
+            st.caption(
+                "Verde = situação controlada | Amarelo = atenção | Laranja = aviso | Vermelho = crítico. "
+                "O gráfico mostra como essa distribuição evoluiu semana a semana em todo o estado."
+            )
 
     # ── Chart 3: Rt evolution ─────────────────────────────────
     with col2:
@@ -243,8 +258,11 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
     st.divider()
     st.write("")  # Spacing
 
+    st.divider()
+    st.write("")  # Spacing
+
     # ── Data table ────────────────────────────────────────────
-    st.markdown("### Dados Semanais")
+    st.markdown("#### Dados Semanais Completos")
     
     display_df = df[["week_date", "week_num", "total_cases", "estimated_cases", "avg_rt", "municipalities"]].copy()
     display_df.columns = ["Data", "Semana", "Casos", "Estimados", "Rt Médio", "Municípios"]

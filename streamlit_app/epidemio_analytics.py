@@ -186,7 +186,12 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
         st.warning("Nenhum dado de alerta disponivel para o periodo selecionado.")
         return
 
-    st.title(f"Visão Geral — {DISEASES_PT[disease]}")
+    st.markdown(f"""
+    <h2 style="text-align: center; font-size: 1.2rem; color: #333; font-weight: 300;">
+    {DISEASES_PT[disease]}
+    </h2>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: -10px;"><b>Qual é a situação atual da doença em São Paulo?</b></p>
+    """, unsafe_allow_html=True)
     st.divider()
     st.write("")  # Spacing
 
@@ -380,7 +385,7 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     st.markdown("---")
 
     # ── Section 5: Mesoregion summary table ──────────────────
-    st.subheader("Resumo por Mesorregiao")
+    st.markdown("#### Resumo por Mesorregião")
     if not mesoregion_summary.empty:
         display_cols = [
             "nm_mesorregiao", "total_cases", "avg_rt", "max_alert_level",
@@ -407,14 +412,14 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            label="Exportar Alertas (CSV)",
+            label="� Exportar Alertas Atuais (CSV)",
             data=current_alerts.to_csv(index=False),
             file_name=f"alertas_{disease}.csv",
             mime="text/csv",
         )
     with col2:
         st.download_button(
-            label="Exportar Mesorregioes (CSV)",
+            label="📥 Exportar Mesorregiões (CSV)",
             data=mesoregion_summary.to_csv(index=False),
             file_name=f"mesoregiao_{disease}.csv",
             mime="text/csv",

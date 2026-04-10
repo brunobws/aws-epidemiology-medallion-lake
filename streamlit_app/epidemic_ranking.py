@@ -18,6 +18,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from utils.athena_service import AthenaService
 from utils.cache_manager import cached_query
 from utils.logger import get_logger
@@ -110,6 +111,26 @@ def classificar_porte(populacao: float) -> str:
         return "🔴 Grande"
 
 
+def classificar_rt(rt: float) -> str:
+    """Classifica situação do Rt para exibição simples."""
+    if rt > 1.2:
+        return "🔴 Crescendo"
+    elif rt >= 1.0:
+        return "🟡 Atenção"
+    else:
+        return "🟢 Controlado"
+
+
+def cor_rt(rt: float) -> str:
+    """Retorna cor semântica baseada em Rt."""
+    if rt > 1.2:
+        return "#E24B4A"   # vermelho — crítico
+    elif rt >= 1.0:
+        return "#EF9F27"   # âmbar — atenção
+    else:
+        return "#1D9E75"   # verde — controlado
+
+
 def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     """Render ranking and hotspots tab."""
 
@@ -147,7 +168,12 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     # ── Add Porte classification (for Part 4)
     df["porte"] = df["vl_populacao"].apply(classificar_porte)
     
-    st.subheader(f"Ranking — {DISEASES_PT[disease]} ({selected_year})")
+    st.markdown(f"""
+    <h2 style="text-align: center; font-size: 1.2rem; color: #333; font-weight: 300;">
+    {DISEASES_PT[disease]} · {selected_year}
+    </h2>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: -10px;"><b>Quais municípios precisam de atenção agora?</b></p>
+    """, unsafe_allow_html=True)
     st.divider()
     st.write("")  # Spacing
 
@@ -163,33 +189,44 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     
     n_criticos = len(critical_mun)
     
-    # Fórmula compacta
-    col_formula, col_help = st.columns([0.95, 0.05])
-    with col_formula:
-        st.markdown("""
-        **Prioridade** = (Rt × 0.5) + (Incidência/100k normalizada × 0.5)  
-        **Crítico** = Rt > 1.2 e Incidência acima do 90º percentil
-        """)
+    # Fórmula compacta + Help button
+    col_form, col_help_btn = st.columns([0.88, 0.12])
     
-    with col_help:
-        with st.popover("ℹ️"):
+    with col_form:
+        st.markdown("""
+        <small style="color: #666;">
+        <strong>Pontuação de risco</strong> = velocidade de crescimento (Rt) + 
+        proporção da população infectada (incidência por habitante)
+        <br><br>
+        <strong>Em alerta</strong> = doença crescendo rapidamente E alta proporção 
+        de infectados para o tamanho da cidade
+        </small>
+        """, unsafe_allow_html=True)
+    
+    with col_help_btn:
+        st.write("")  # Pequeno espaço
+        with st.popover("?", use_container_width=False):
             st.markdown("""
-            **Prioridade** = Métrica que combina **Rt** (crescimento) + **Incidência** (volume)
+            **Como identificamos municípios em risco?**
             
-            - Um município com **Rt = 2 e poucas pessoas** é crítico (crescendo rapidamente, mesmo que pequeno)
-            - Um município com **Rt = 0.8 e muitas pessoas** é menos crítico (mesmo com volume alto, está controlando)
-            - **Resultado**: Você vê municípios pequenos com 5% de infectados (taxa alta) lado de mega-cidades com 0.5% (mas muitos casos)
+            Olhamos duas coisas ao mesmo tempo:
             
-            **90º percentil** = Apenas os 10% piores municípios em incidência
+            🔴 **Velocidade de crescimento (Rt)**
+            - Rt > 1.2 = crescimento rápido
+            - Rt < 1 = diminuindo
             
-            **Rt > 1.2** = Crescimento significativo (não apenas marginal). Um Rt de 1.2 significa que a cada ciclo de transmissão, a doença 20% se propaga 20% mais.
+            📍 **Proporção de infectados**
+            - Uma cidade pequena com 200 infectados/100k é mais crítica que uma metrópole com 50/100k
             
-            **Porte do município** ajuda a entender o impacto relativo: um pequeno com 200/100k é crítico proporcionalmente.
+            **Quando acrescentamos à lista?**
+            AMBAS as condições: crescendo E alta proporção.
             """)
+    
+    st.write("")  # Spacing
     
     # Banner dinamicamente colorido
     if n_criticos > 0:
-        st.error(f"**{n_criticos} município(s) em situação crítica** — Rt > 1.2 e incidência acima de {p90_incidence:.0f}/100k (90º percentil estadual)")
+        st.error(f"⚠️ {n_criticos} municípios precisam de atenção agora — doença crescendo rapidamente com alta proporção de infectados por habitante")
     else:
         st.success("Nenhum município em situação crítica. Todos estão sob controle ou com tendência de melhora.")
 
@@ -278,8 +315,14 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     st.divider()
     st.write("")  # Spacing
 
-    # ── Regional comparison ──────────────────────────────────────
-    st.markdown("#### Volume de casos por mesorregião")
+    # ── Regional comparison: Two separate views ──────────────────
+    title_with_help("Análise por mesorregião", """Duas métricas, duas respostas
+
+Volume alto não significa crescimento rápido — e vice-versa. Leia os dois gráficos juntos para identificar prioridades:
+- Esquerda: Qual mesorregião tem mais carga de casos?
+- Direita: Qual mesorregião está crescendo mais rápido?""")
+
+    st.write("")  # Spacing
 
     meso_agg = df.groupby("nm_mesorregiao").agg({
         "vl_total_casos": "sum",
@@ -289,18 +332,102 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     }).reset_index()
     meso_agg.columns = ["Mesorregiao", "Total Casos", "Sem. Alerta Alto", "Rt Medio", "Municipios"]
 
-    fig_meso = px.bar(
-        meso_agg.sort_values("Total Casos", ascending=True),
-        y="Mesorregiao",
-        x="Total Casos",
-        color="Rt Medio",
-        color_continuous_scale="RdYlGn_r",
-        labels={"Total Casos": "Total de Casos"},
-        height=CHART_HEIGHT,
+    # ── Gráfico 1: Volume de casos (esquerda) ────────────────────
+    df_meso_vol = meso_agg.sort_values("Total Casos", ascending=True)
+    
+    fig_vol = go.Figure(go.Bar(
+        x=df_meso_vol["Total Casos"],
+        y=df_meso_vol["Mesorregiao"],
         orientation="h",
+        marker_color="#378ADD",
+        name="",
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Total de casos: %{x:,.0f}<extra></extra>"
+        )
+    ))
+
+    fig_vol.update_layout(
+        title=dict(
+            text="Onde há mais casos?",
+            font=dict(size=13, color="#444"),
+            x=0,
+            xanchor="left"
+        ),
+        xaxis_title="Total de casos notificados",
+        yaxis_title="",
+        height=420,
+        margin=dict(l=0, r=20, t=40, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        hovermode="closest",
+        showlegend=False,
     )
-    fig_meso = apply_professional_theme(fig_meso)
-    st.plotly_chart(fig_meso, use_container_width=True)
+    
+    # Linha de referência no valor mediano
+    mediana = df_meso_vol["Total Casos"].median()
+    fig_vol.add_vline(
+        x=mediana,
+        line_dash="dot",
+        line_color="#aaa",
+        annotation_text=f"Mediana: {mediana:.0f}",
+        annotation_position="top right",
+        annotation_font_size=10,
+        annotation_font_color="#888"
+    )
+
+    # ── Gráfico 2: Velocidade de crescimento (direita) ──────────
+    df_meso_rt = meso_agg.sort_values("Rt Medio", ascending=True)
+    
+    # Cores por faixa de Rt
+    cores = df_meso_rt["Rt Medio"].apply(cor_rt).tolist()
+    
+    fig_rt = go.Figure(go.Bar(
+        x=df_meso_rt["Rt Medio"],
+        y=df_meso_rt["Mesorregiao"],
+        orientation="h",
+        marker_color=cores,
+        name="",
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Rt Médio: %{x:.2f}<extra></extra>"
+        )
+    ))
+
+    fig_rt.update_layout(
+        title=dict(
+            text="Onde está crescendo mais rápido?",
+            font=dict(size=13, color="#444"),
+            x=0,
+            xanchor="left"
+        ),
+        xaxis_title="Rt Médio (> 1 = crescendo)",
+        yaxis_title="",
+        height=420,
+        margin=dict(l=0, r=20, t=40, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        hovermode="closest",
+        showlegend=False,
+    )
+    
+    # Linha do limiar epidêmico Rt = 1.0
+    fig_rt.add_vline(
+        x=1.0,
+        line_dash="dash",
+        line_color="#E24B4A",
+        annotation_text="Rt = 1 (limiar)",
+        annotation_position="top right",
+        annotation_font_size=10,
+        annotation_font_color="#E24B4A"
+    )
+
+    # Montagem lado a lado
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(fig_vol, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig_rt, use_container_width=True)
 
     st.divider()
     st.write("")  # Spacing
@@ -318,32 +445,51 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
             "vl_prioridade"
         ]].copy()
         
+        # Add Rt classification
+        critical_display["Situação"] = critical_display["vl_rt_medio"].apply(classificar_rt)
+        
+        critical_display = critical_display[[
+            "nm_municipio",
+            "Situação",
+            "nm_mesorregiao",
+            "porte",
+            "vl_rt_medio",
+            "vl_incidencia_acumulada",
+            "vl_prioridade"
+        ]]
+        
         critical_display.columns = [
             "Município",
+            "Situação",
             "Mesorregião",
             "Porte",
-            "Rt Médio",
-            "Incidência/100k",
-            "Prioridade"
+            "Rt (velocidade)",
+            "Infectados/100 mil hab.",
+            "Pontuação de risco"
         ]
         
         st.dataframe(
             critical_display.style.format({
-                "Rt Médio": "{:.2f}",
-                "Incidência/100k": "{:.1f}",
-                "Prioridade": "{:.2f}",
+                "Rt (velocidade)": "{:.2f}",
+                "Infectados/100 mil hab.": "{:.1f}",
+                "Pontuação de risco": "{:.2f}",
             }),
             use_container_width=True,
             hide_index=True,
         )
         
-        st.caption("Municípios pequenos com alta incidência são proporcionalmente mais afetados do que cidades grandes com mais casos absolutos.")
+        st.caption(
+            "💡 Por que aparecem municípios pequenos? Uma cidade com 200 "
+            "infectados por 100 mil habitantes está mais impactada do que "
+            "uma metrópole com 50 por 100 mil — mesmo tendo menos casos. "
+            "Olhamos a proporção, não o número total."
+        )
     
     st.divider()
     st.write("")  # Spacing
 
     # ── Full ranking table ────────────────────────────────────────
-    st.markdown("#### 📋 Ranking completo")
+    st.markdown("#### Ranking completo")
     
     search_term = st.text_input("Buscar município", "", key="rank_search")
     filtered_df = df[
@@ -357,9 +503,9 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     ]
     display_df = filtered_df[display_cols].copy()
     display_df.columns = [
-        "Rank SP", "Município", "Mesorregião",
-        "Casos", "Incidência", "Rt Médio",
-        "Sem. Vermelho", "Sem. Alto"
+        "Ranking SP", "Município", "Mesorregião",
+        "Total de casos", "Infectados/100 mil hab.", "Rt (velocidade)",
+        "Semanas em alerta", "Semanas críticas"
     ]
 
     st.dataframe(
