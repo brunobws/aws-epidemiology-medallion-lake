@@ -43,3 +43,36 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
+
+# ===== EC2 DEPLOYMENT =====
+.PHONY: ec2-setup ec2-deploy ec2-restart ec2-stop
+
+ec2-setup:
+	@echo "Installing Docker dependencies..."
+	sudo yum update -y && sudo yum install -y git docker
+	sudo usermod -aG docker ec2-user
+	sudo systemctl start docker
+	@echo "✓ Docker setup complete. Run: newgrp docker"
+
+ec2-deploy:
+	@echo "Pulling latest code..."
+	git pull origin main
+	@echo "Building Docker image..."
+	make docker-build
+	@echo "Stopping old containers..."
+	make docker-down
+	@echo "Starting dashboard..."
+	make docker-up
+	@echo "✓ Dashboard running at http://$(EC2_IP):8501"
+
+ec2-restart:
+	make docker-down
+	make docker-up
+	make docker-logs
+
+ec2-stop:
+	make docker-down
+	@echo "✓ Dashboard stopped"
+
+ec2-status:
+	docker ps --filter "name=arbovigilancia"
