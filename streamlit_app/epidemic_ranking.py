@@ -30,6 +30,7 @@ from config import (
 )
 from theme import (
     apply_professional_theme,
+    title_with_help,
     COLOR_ERROR,
     COLOR_ORANGE,
     COLOR_SUCCESS,
@@ -99,6 +100,16 @@ def fetch_available_years(athena_service: AthenaService, disease: str) -> list:
         return [2026]
 
 
+def classificar_porte(populacao: float) -> str:
+    """Classifica município por porte baseado em população."""
+    if populacao < 20_000:
+        return "🟡 Pequeno"
+    elif populacao < 100_000:
+        return "🟠 Médio"
+    else:
+        return "🔴 Grande"
+
+
 def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     """Render ranking and hotspots tab."""
 
@@ -125,56 +136,150 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
         st.warning("Nenhum dado de ranking disponivel.")
         return
 
+    # ── Calculate priority score for better prioritization ──────
+    # Priority = Rt (growth factor) * Incidence (volume factor)
+    # This identifies municipalities that are both growing AND have high impact
+    df["vl_prioridade"] = (
+        (df["vl_rt_medio"] * 0.5) +  # 50% weight to growth (Rt)
+        (df["vl_incidencia_acumulada"] / df["vl_incidencia_acumulada"].max() * 0.5)  # 50% weight to incidence (normalized)
+    )
+    
+    # ── Add Porte classification (for Part 4)
+    df["porte"] = df["vl_populacao"].apply(classificar_porte)
+    
     st.subheader(f"Ranking — {DISEASES_PT[disease]} ({selected_year})")
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
-    # ── Chart 1: Top-N municipalities by incidence ────────────
+    # ── PART 2: Banner de alerta rápido no topo ──────────────────
+    # Identificar municípios críticos antes do banner
+    critical_threshold_rt = 1.2
+    p90_incidence = df["vl_incidencia_acumulada"].quantile(0.90)
+    
+    critical_mun = df[
+        (df["vl_rt_medio"] > critical_threshold_rt) & 
+        (df["vl_incidencia_acumulada"] > p90_incidence)
+    ].sort_values("vl_prioridade", ascending=False)
+    
+    n_criticos = len(critical_mun)
+    
+    # Fórmula compacta
+    col_formula, col_help = st.columns([0.95, 0.05])
+    with col_formula:
+        st.markdown("""
+        **Prioridade** = (Rt × 0.5) + (Incidência/100k normalizada × 0.5)  
+        **Crítico** = Rt > 1.2 e Incidência acima do 90º percentil
+        """)
+    
+    with col_help:
+        with st.popover("ℹ️"):
+            st.markdown("""
+            **Prioridade** = Métrica que combina **Rt** (crescimento) + **Incidência** (volume)
+            
+            - Um município com **Rt = 2 e poucas pessoas** é crítico (crescendo rapidamente, mesmo que pequeno)
+            - Um município com **Rt = 0.8 e muitas pessoas** é menos crítico (mesmo com volume alto, está controlando)
+            - **Resultado**: Você vê municípios pequenos com 5% de infectados (taxa alta) lado de mega-cidades com 0.5% (mas muitos casos)
+            
+            **90º percentil** = Apenas os 10% piores municípios em incidência
+            
+            **Rt > 1.2** = Crescimento significativo (não apenas marginal). Um Rt de 1.2 significa que a cada ciclo de transmissão, a doença 20% se propaga 20% mais.
+            
+            **Porte do município** ajuda a entender o impacto relativo: um pequeno com 200/100k é crítico proporcionalmente.
+            """)
+    
+    # Banner dinamicamente colorido
+    if n_criticos > 0:
+        st.error(f"**{n_criticos} município(s) em situação crítica** — Rt > 1.2 e incidência acima de {p90_incidence:.0f}/100k (90º percentil estadual)")
+    else:
+        st.success("Nenhum município em situação crítica. Todos estão sob controle ou com tendência de melhora.")
+
+    st.divider()
+    st.write("")  # Spacing
+
+    # ── PART 1 & 3: Reorganized layout com títulos menores ──────
+    
+    # ── Top N municipalities by priority ────────────────────────
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader(f"Top {top_n} Municípios por Incidência")
-        top_df = df.nlargest(top_n, "vl_incidencia_acumulada")
+        st.markdown("#### Top {} municípios".format(top_n))
+        top_df = df.nlargest(top_n, "vl_prioridade").sort_values("vl_prioridade", ascending=True)
 
         fig_top = px.bar(
-            top_df.sort_values("vl_incidencia_acumulada", ascending=True),
-            x="vl_incidencia_acumulada",
+            top_df,
+            x="vl_prioridade",
             y="nm_municipio",
             color="vl_rt_medio",
             color_continuous_scale="RdYlGn_r",
             labels={
-                "vl_incidencia_acumulada": "Incidência (por 100k)",
+                "vl_prioridade": "Prioridade",
                 "nm_municipio": "",
                 "vl_rt_medio": "Rt Médio",
             },
             height=max(CHART_HEIGHT, top_n * 22),
             orientation="h",
         )
+        
+        # PART 5: Adicionar linha crítica (threshold = 1.0)
+        fig_top.add_vline(
+            x=1.0,
+            line_dash="dash",
+            line_color="#EF553B",
+            annotation_text="Limiar crítico",
+            annotation_position="top right",
+            annotation_font_size=10,
+        )
+        
+        # PART 5: Melhorar hover
+        fig_top.update_traces(
+            hovertemplate="<b>%{y}</b><br>" +
+                         "Prioridade: %{x:.2f}<br>" +
+                         "Incidência: %{customdata[0]:.1f}/100k<br>" +
+                         "Rt Médio: %{color:.2f}<br>" +
+                         "Porte: %{customdata[1]}<extra></extra>",
+            customdata=top_df[["vl_incidencia_acumulada", "porte"]].values,
+        )
+        
         fig_top = apply_professional_theme(fig_top)
         st.plotly_chart(fig_top, use_container_width=True)
 
-    # ── Chart 2: Treemap by mesoregion ────────────────────────
+    # ── Treemap by mesoregion ────────────────────────────────────
     with col2:
-        st.subheader("Distribuição Regional (Treemap)")
+        st.markdown("#### Distribuição por mesorregião")
 
+        df_treemap = df.sort_values("vl_prioridade", ascending=False)
+        
         fig_treemap = px.treemap(
-            df,
+            df_treemap,
             path=["nm_mesorregiao", "nm_municipio"],
-            values="vl_total_casos",
-            color="vl_incidencia_acumulada",
-            color_continuous_scale="Reds",
+            values="vl_prioridade",
+            color="vl_rt_medio",
+            color_continuous_scale="RdYlGn_r",
             labels={
-                "vl_total_casos": "Casos",
-                "vl_incidencia_acumulada": "Incidencia",
+                "vl_prioridade": "Prioridade",
+                "vl_rt_medio": "Rt Médio",
             },
             height=max(CHART_HEIGHT, top_n * 22),
         )
+        
+        fig_treemap.update_traces(
+            textinfo="label+value",
+            textfont=dict(size=11),
+            hovertemplate="<b>%{label}</b><br>Prioridade: %{value:.2f}<extra></extra>",
+        )
+        
+        fig_treemap.update_layout(
+            uniformtext=dict(minsize=9, mode='hide'),
+        )
+        
         fig_treemap = apply_professional_theme(fig_treemap)
         st.plotly_chart(fig_treemap, use_container_width=True)
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
-    # ── Chart 3: Regional comparison ──────────────────────────
-    st.subheader("Comparativo por Mesorregiao")
+    # ── Regional comparison ──────────────────────────────────────
+    st.markdown("#### Volume de casos por mesorregião")
 
     meso_agg = df.groupby("nm_mesorregiao").agg({
         "vl_total_casos": "sum",
@@ -197,17 +302,53 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     fig_meso = apply_professional_theme(fig_meso)
     st.plotly_chart(fig_meso, use_container_width=True)
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
-    # ── Full ranking table ────────────────────────────────────
-    st.subheader("Ranking Completo")
-
-    search_term = st.text_input("Buscar municipio", "", key="rank_search")
-    filtered_df = df.copy()
-    if search_term:
-        filtered_df = filtered_df[
-            filtered_df["nm_municipio"].str.contains(search_term, case=False, na=False)
+    # ── PART 4: Tabela de municípios críticos com coluna Porte ───
+    if n_criticos > 0:
+        st.markdown("#### Municípios que precisam de ação imediata")
+        
+        critical_display = critical_mun[[
+            "nm_municipio",
+            "nm_mesorregiao",
+            "porte",
+            "vl_rt_medio",
+            "vl_incidencia_acumulada",
+            "vl_prioridade"
+        ]].copy()
+        
+        critical_display.columns = [
+            "Município",
+            "Mesorregião",
+            "Porte",
+            "Rt Médio",
+            "Incidência/100k",
+            "Prioridade"
         ]
+        
+        st.dataframe(
+            critical_display.style.format({
+                "Rt Médio": "{:.2f}",
+                "Incidência/100k": "{:.1f}",
+                "Prioridade": "{:.2f}",
+            }),
+            use_container_width=True,
+            hide_index=True,
+        )
+        
+        st.caption("Municípios pequenos com alta incidência são proporcionalmente mais afetados do que cidades grandes com mais casos absolutos.")
+    
+    st.divider()
+    st.write("")  # Spacing
+
+    # ── Full ranking table ────────────────────────────────────────
+    st.markdown("#### 📋 Ranking completo")
+    
+    search_term = st.text_input("Buscar município", "", key="rank_search")
+    filtered_df = df[
+        df["nm_municipio"].str.contains(search_term, case=False, na=False)
+    ]
 
     display_cols = [
         "nr_rank_estado", "nm_municipio", "nm_mesorregiao",
@@ -216,22 +357,25 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     ]
     display_df = filtered_df[display_cols].copy()
     display_df.columns = [
-        "Rank SP", "Municipio", "Mesorregiao",
-        "Casos", "Incidencia", "Rt Medio",
+        "Rank SP", "Município", "Mesorregião",
+        "Casos", "Incidência", "Rt Médio",
         "Sem. Vermelho", "Sem. Alto"
     ]
 
     st.dataframe(
         display_df.style.format({
             "Casos": "{:,.0f}",
-            "Incidencia": "{:.2f}",
-            "Rt Medio": "{:.3f}",
+            "Incidência": "{:.2f}",
+            "Rt Médio": "{:.3f}",
         }),
         use_container_width=True,
         height=400,
     )
 
-    # ── Export ────────────────────────────────────────────────
+    st.divider()
+    st.write("")  # Spacing
+
+    # ── Export ────────────────────────────────────────────────────
     csv_data = df.to_csv(index=False)
     st.download_button(
         label="📥 Exportar Ranking (CSV)",

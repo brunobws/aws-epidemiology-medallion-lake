@@ -33,6 +33,7 @@ from config import (
 )
 from theme import (
     apply_professional_theme,
+    title_with_help,
     COLOR_ERROR,
     COLOR_SUCCESS,
     COLOR_INFO,
@@ -121,7 +122,8 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
         return
 
     st.subheader(f"Perfil Demográfico — {DISEASES_PT[disease]} ({selected_year})")
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     # ── KPIs ──────────────────────────────────────────────────
     total_notif = int(df["nr_notificacoes"].sum())
@@ -143,12 +145,13 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     with k4:
         st.metric("Taxa Cura", f"{cure_rate}%")
     with k5:
-        st.metric("Confirmacao", f"{conf_rate}%")
+        st.metric("Confirmação", f"{conf_rate}%")
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     # ── Chart 1: Age pyramid ──────────────────────────────────
-    st.subheader("Piramide Etaria de Notificacoes")
+    title_with_help("Pirâmide Etária de Notificações", "Distribuição de casos por faixa etária e sexo. Lado esquerdo = masculino, direito = feminino")
 
     pyr = df.groupby(["ds_faixa_etaria", "cs_sexo"])["nr_notificacoes"].sum().reset_index()
     pyr_m = pyr[pyr["cs_sexo"] == "M"].copy()
@@ -172,9 +175,9 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     ))
     fig_pyr.update_layout(
         barmode="overlay",
-        height=CHART_HEIGHT,
-        xaxis_title="Notificacoes",
-        yaxis_title="Faixa Etaria",
+        height=500,
+        xaxis_title="Notificações",
+        yaxis_title="Faixa Etária",
         yaxis=dict(categoryorder="array", categoryarray=AGE_BRACKETS),
     )
 
@@ -191,13 +194,14 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
     fig_pyr = apply_professional_theme(fig_pyr)
     st.plotly_chart(fig_pyr, use_container_width=True)
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     # ── Chart 2 & 3: Outcomes and sex comparison ──────────────
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Desfecho Clinico por Faixa Etaria")
+        st.markdown("#### Desfecho Clínico por Faixa Etária")
         outcome = df.groupby("ds_faixa_etaria").agg(
             curas=("nr_curas", "sum"),
             obitos=("nr_obitos", "sum"),
@@ -222,14 +226,14 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
             barmode="stack",
             height=CHART_HEIGHT,
             xaxis=dict(categoryorder="array", categoryarray=AGE_BRACKETS),
-            xaxis_title="Faixa Etaria",
-            yaxis_title="Notificacoes",
+            xaxis_title="Faixa Etária",
+            yaxis_title="Notificações",
         )
         fig_outcome = apply_professional_theme(fig_outcome)
         st.plotly_chart(fig_outcome, use_container_width=True)
 
     with col2:
-        st.subheader("Notificacoes por Sexo e Faixa Etaria")
+        st.markdown("#### Notificações por Sexo e Faixa Etária")
         sex_age = df[df["cs_sexo"].isin(["M", "F"])].groupby(
             ["ds_faixa_etaria", "cs_sexo"]
         )["nr_notificacoes"].sum().reset_index()
@@ -249,11 +253,12 @@ def render_epidemic_demographic(athena_service: AthenaService, disease: str):
         fig_sex = apply_professional_theme(fig_sex)
         st.plotly_chart(fig_sex, use_container_width=True)
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     # ── Chart 4: Seasonality heatmap ──────────────────────────
-    st.subheader("Sazonalidade: Notificacoes por Mes e Mesorregiao")
-
+    title_with_help("Sazonalidade: Notificações por Mês e Mesorregião", "Mapa de calor mostrando padrão sazonal de casos ao longo dos meses e regiões")
+    
     heat = df.groupby(["nm_mesorregiao", "nr_mes_notificacao"])["nr_notificacoes"].sum().reset_index()
     heat_pivot = heat.pivot_table(
         index="nm_mesorregiao",

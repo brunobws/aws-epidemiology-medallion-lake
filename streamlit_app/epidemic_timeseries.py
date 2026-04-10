@@ -32,6 +32,7 @@ from config import (
 )
 from theme import (
     apply_professional_theme,
+    title_with_help,
     ALERT_VERDE,
     ALERT_AMARELO,
     ALERT_LARANJA,
@@ -124,12 +125,13 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
         return
 
     st.subheader(f"Série Temporal — {DISEASES_PT[disease]} ({selected_year})")
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     num_weeks = len(df)
 
     # ── Chart 1: Observed vs Estimated cases ──────────────────
-    st.subheader("Casos Observados vs Estimados")
+    title_with_help("Casos Observados vs Estimados", "Linha contínua = casos reais. Tracejada = previsão do modelo. Diferenças indicam se a situação é melhor ou pior que esperado")
 
     fig_cases = go.Figure()
     fig_cases.add_trace(go.Scatter(
@@ -155,50 +157,63 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
     fig_cases = apply_professional_theme(fig_cases)
     st.plotly_chart(fig_cases, use_container_width=True)
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     # ── Chart 2: Alert level distribution (stacked area) ──────
+    title_with_help("Evolução de Alertas e Rt", "Rt = quantas pessoas CADA INFECTADO contamina em média. Rt < 1 = doença diminuindo (bom). Rt > 1 = doença crescendo (ruim). O gráfico à esquerda mostra quantos municípios estão em cada nível de alerta semana a semana")
+
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Distribuicao de Alertas por Semana")
+        st.markdown("#### Distribuição de Alertas por Semana")
 
         if num_weeks <= 1:
-            st.info("⚠️ Apenas 1 semana disponivel. Grafico de area requer mais dados.")
+            st.info("⚠️ Apenas 1 semana disponível. Gráfico requer múltiplas semanas.")
         else:
-            fig_alerts = go.Figure()
-            fig_alerts.add_trace(go.Scatter(
-                x=df["week_date"], y=df["green_count"],
-                name="Verde", fill="tonexty", stackgroup="one",
-                line=dict(color=ALERT_VERDE),
-            ))
-            fig_alerts.add_trace(go.Scatter(
-                x=df["week_date"], y=df["yellow_count"],
-                name="Amarelo", fill="tonexty", stackgroup="one",
-                line=dict(color=ALERT_AMARELO),
-            ))
-            fig_alerts.add_trace(go.Scatter(
-                x=df["week_date"], y=df["orange_count"],
-                name="Laranja", fill="tonexty", stackgroup="one",
-                line=dict(color=ALERT_LARANJA),
-            ))
-            fig_alerts.add_trace(go.Scatter(
-                x=df["week_date"], y=df["red_count"],
-                name="Vermelho", fill="tonexty", stackgroup="one",
-                line=dict(color=ALERT_VERMELHO),
-            ))
-            fig_alerts.update_layout(
+            # Preparar dados em formato long para barras agrupadas
+            alerts_data = pd.DataFrame({
+                "Semana": df["week_date"].tolist() * 4,
+                "Alertas": (df["green_count"].tolist() + 
+                           df["yellow_count"].tolist() + 
+                           df["orange_count"].tolist() + 
+                           df["red_count"].tolist()),
+                "Nível": (["Verde"] * len(df) + 
+                         ["Amarelo"] * len(df) + 
+                         ["Laranja"] * len(df) + 
+                         ["Vermelho"] * len(df))
+            })
+            
+            # Mapa de cores
+            color_map = {
+                "Verde": ALERT_VERDE,
+                "Amarelo": ALERT_AMARELO,
+                "Laranja": ALERT_LARANJA,
+                "Vermelho": ALERT_VERMELHO
+            }
+            
+            fig_alerts = px.bar(
+                alerts_data,
+                x="Semana",
+                y="Alertas",
+                color="Nível",
+                barmode="group",
+                color_discrete_map=color_map,
+                category_orders={"Nível": ["Verde", "Amarelo", "Laranja", "Vermelho"]},
+                labels={"Alertas": "Municípios", "Nível": "Nível de Alerta"},
                 height=CHART_HEIGHT,
-                xaxis_title="Semana",
-                yaxis_title="Municipios",
+            )
+            fig_alerts.update_layout(
                 hovermode="x unified",
+                xaxis_title="Semana",
+                yaxis_title="Municípios"
             )
             fig_alerts = apply_professional_theme(fig_alerts)
             st.plotly_chart(fig_alerts, use_container_width=True)
 
     # ── Chart 3: Rt evolution ─────────────────────────────────
     with col2:
-        st.subheader("Evolucao do Rt")
+        st.markdown("#### 📊 Evolução do Rt")
 
         fig_rt = go.Figure()
         fig_rt.add_trace(go.Scatter(
@@ -225,21 +240,28 @@ def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
         fig_rt = apply_professional_theme(fig_rt)
         st.plotly_chart(fig_rt, use_container_width=True)
 
-    st.markdown("---")
+    st.divider()
+    st.write("")  # Spacing
 
     # ── Data table ────────────────────────────────────────────
-    st.subheader("Dados Semanais")
+    st.markdown("### Dados Semanais")
+    
     display_df = df[["week_date", "week_num", "total_cases", "estimated_cases", "avg_rt", "municipalities"]].copy()
-    display_df.columns = ["Data", "Semana", "Casos", "Estimados", "Rt Medio", "Municipios"]
+    display_df.columns = ["Data", "Semana", "Casos", "Estimados", "Rt Médio", "Municípios"]
+    
+    # Remover linhas vazias e converter data
+    display_df = display_df.dropna(how='all').reset_index(drop=True)
+    display_df["Data"] = pd.to_datetime(display_df["Data"]).dt.strftime("%d/%m/%Y")
 
     st.dataframe(
         display_df.style.format({
             "Casos": "{:,.0f}",
             "Estimados": "{:,.0f}",
-            "Rt Medio": "{:.3f}",
+            "Rt Médio": "{:.3f}",
         }),
         use_container_width=True,
         height=300,
+        hide_index=True,
     )
 
     csv_data = df.to_csv(index=False)

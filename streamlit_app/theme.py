@@ -144,19 +144,21 @@ def card_css() -> str:
     """
 
 
-def kpi_card_html(value: str, label: str, delta: str = None) -> str:
+def kpi_card_html(value: str, label: str, delta: str = None, description: str = None) -> str:
     delta_html = (
         f"<span style='color: {COLOR_SUCCESS}; font-size: 12px;'>{delta}</span>"
         if delta
         else ""
     )
+    title_attr = f"title='{description}'" if description else ""
     return f"""
-    <div style='
+    <div {title_attr} style='
         background: {COLOR_WHITE};
         border-radius: 10px;
         padding: 16px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        cursor: help;
     '>
         <div style='font-size: 24px; font-weight: 700; color: {COLOR_DARK_GRAY};
             margin-bottom: 6px;'>{value}</div>
@@ -172,10 +174,11 @@ def kpi_card_with_sparkline(
     label: str,
     sparkline_values: list,
     color: str = COLOR_ORANGE,
+    description: str = None,
 ) -> str:
     """KPI card with an inline SVG sparkline showing trend of last N values."""
     if not sparkline_values or len(sparkline_values) < 2:
-        return kpi_card_html(value, label)
+        return kpi_card_html(value, label, description=description)
 
     vals = [float(v) for v in sparkline_values]
     mn, mx = min(vals), max(vals)
@@ -192,13 +195,15 @@ def kpi_card_with_sparkline(
     trend_arrow = "&#9650;" if trend > 0 else ("&#9660;" if trend < 0 else "&#8212;")
     trend_color = COLOR_ERROR if trend > 0 else (COLOR_SUCCESS if trend < 0 else COLOR_TEXT)
 
+    title_attr = f"title='{description}'" if description else ""
     return f"""
-    <div style='
+    <div {title_attr} style='
         background: {COLOR_WHITE};
         border-radius: 10px;
         padding: 16px 16px 10px 16px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        cursor: help;
     '>
         <div style='font-size: 24px; font-weight: 700; color: {COLOR_DARK_GRAY};
             margin-bottom: 2px;'>{value}</div>
@@ -246,3 +251,29 @@ def chart_title(text: str) -> str:
 ### {text}
 
 """
+
+
+def title_with_help(title: str, help_text: str, level: int = 2) -> None:
+    """
+    Renderiza um título com um botão de ajuda "?" ao lado.
+    O "?" tem tooltip com a descrição ao passar o mouse.
+    
+    Args:
+        title: Texto do título
+        help_text: Texto que aparece no tooltip do "?"
+        level: Nível do heading (1=h1, 2=h2, 3=h3, etc)
+    
+    Uso:
+        title_with_help("Indicadores Principais", "Métricas-chave sobre a situação epidemiológica")
+    """
+    import streamlit as st
+    
+    col_title, col_help = st.columns([0.95, 0.05])
+    
+    with col_title:
+        st.markdown(f"{'#' * level} {title}")
+    
+    with col_help:
+        st.button("?", key=f"help_{title.replace(' ', '_')}", help=help_text, 
+                 use_container_width=True)
+
