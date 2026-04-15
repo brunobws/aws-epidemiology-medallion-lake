@@ -22,6 +22,7 @@ import plotly.graph_objects as go
 from utils.athena_service import AthenaService
 from utils.cache_manager import cached_query
 from utils.logger import get_logger
+from utils.data_service import fetch_available_years
 from config import (
     TABLE_RANKING_ANNUAL,
     DISEASES,
@@ -81,24 +82,6 @@ def fetch_ranking_data(athena_service: AthenaService, disease: str, year: int) -
     except Exception as e:
         logger.error(f"Error fetching ranking data: {str(e)}")
         return pd.DataFrame()
-
-
-@cached_query(ttl_seconds=CACHE_TTL)
-def fetch_available_years(athena_service: AthenaService, disease: str) -> list:
-    """Fetch available years for ranking."""
-    query = f"""
-    SELECT DISTINCT nr_ano_epi
-    FROM {TABLE_RANKING_ANNUAL}
-    WHERE ds_doenca = '{disease}'
-    ORDER BY nr_ano_epi DESC
-    """
-    try:
-        df = athena_service.query_gold(query)
-        if df.empty:
-            return [2026]
-        return sorted(df["nr_ano_epi"].astype(int).tolist(), reverse=True)
-    except Exception as e:
-        return [2026]
 
 
 def classificar_porte(populacao: float) -> str:

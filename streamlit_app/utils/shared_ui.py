@@ -42,7 +42,7 @@ def render_header():
         <div style="display: flex; justify-content: flex-start; align-items: flex-start;">
             <div>
                 <h3 style="margin: 0; font-size: 18px; color: {COLOR_DARK_GRAY}; font-weight: 600;">
-                    ArboVigilância SP
+                    EpiMind
                 </h3>
                 <p style="margin: 0; font-size: 11px; color: {COLOR_LIGHT_GRAY}; letter-spacing: 0.5px;">
                     Vigilância Epidemiológica de Arboviroses
@@ -95,8 +95,8 @@ def render_footer():
     st.markdown(f"""
     <div style="border-top: 1px solid {COLOR_BORDER}; padding: 20px 0; margin-top: 40px;
                 text-align: center; color: {COLOR_LIGHT_GRAY}; font-size: 12px;">
-        <p style="margin-bottom: 5px;">ArboVigilância SP — Medallion Architecture Data Lake</p>
-        <p style="margin-bottom: 8px;">Desenvolvido por Bruno William da Silva</p>
+        <p style="margin-bottom: 5px;">EpiMind — Medallion Architecture Data Lake</p>
+        <p style="margin-bottom: 8px;">Desenvolvido por CyberSquad</p>
         <div style="font-size: 11px;">
             <a href="https://github.com/brunobws/aws-epidemiology-medallion-lake" target="_blank"
                style="color: {COLOR_ORANGE}; text-decoration: none; font-weight: 600;">GitHub</a>

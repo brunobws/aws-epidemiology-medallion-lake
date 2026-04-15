@@ -24,7 +24,7 @@ import os
 ####################################################################
 # APPLICATION METADATA
 ####################################################################
-APP_NAME = "ArboVigilância SP"
+APP_NAME = "EpiMind"
 APP_VERSION = "1.0.0"
 APP_DESCRIPTION = "Painel de vigilância epidemiológica de arboviroses em São Paulo"
 APP_ICON = "🦟"
@@ -67,7 +67,7 @@ LOGS_TABLE = "execution_logs"
 # CACHE CONFIGURATION
 ####################################################################
 ENABLE_CACHE = True
-CACHE_TTL = 600  # 10 minutes
+CACHE_TTL = 604800  # 7 days
 
 
 ####################################################################
@@ -81,8 +81,6 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 # QUERY CONFIGURATION
 ####################################################################
 ATHENA_QUERY_TIMEOUT_SECONDS = 300
-ATHENA_MAX_RETRIES = 3
-ATHENA_RESULT_LIMIT = 50000
 
 
 ####################################################################
@@ -100,7 +98,6 @@ CHART_COLOR_WARNING = "#ff7f0e"
 ####################################################################
 # FILTER CONFIGURATION
 ####################################################################
-MULTI_SELECT_LIMIT = 50
 DATE_FORMAT = "%Y-%m-%d"
 
 
@@ -132,14 +129,6 @@ SEX_MAP = {"M": "Masculino", "F": "Feminino", "I": "Ignorado"}
 
 
 ####################################################################
-# DATA QUALITY CONFIGURATION
-####################################################################
-BDQ_KEYWORDS = ["test", "quality", "dq", "bdq", "validation"]
-CRITICAL_TABLE_KEYWORDS = ["fact", "dimension", "core"]
-
-
-####################################################################
 # LAYER TYPES
 ####################################################################
 DATA_LAYERS = ["bronze", "silver", "gold", "quality"]
-STATUS_TYPES = ["SUCCEEDED", "FAILED", "RUNNING", "CANCELLED"]

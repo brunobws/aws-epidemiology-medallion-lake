@@ -22,6 +22,7 @@ import plotly.express as px
 from utils.athena_service import AthenaService
 from utils.cache_manager import cached_query
 from utils.logger import get_logger
+from utils.data_service import fetch_available_years
 from config import (
     TABLE_ALERTS_WEEKLY,
     DISEASES,
@@ -83,30 +84,11 @@ def fetch_weekly_series(athena_service: AthenaService, disease: str, year: int) 
         return pd.DataFrame()
 
 
-@cached_query(ttl_seconds=CACHE_TTL)
-def fetch_available_years(athena_service: AthenaService, disease: str) -> list:
-    """Fetch available years for a disease."""
-    query = f"""
-    SELECT DISTINCT nr_ano_epi
-    FROM {TABLE_ALERTS_WEEKLY}
-    WHERE ds_doenca = '{disease}'
-    ORDER BY nr_ano_epi DESC
-    """
-    try:
-        df = athena_service.query_gold(query)
-        if df.empty:
-            return [2026]
-        return sorted(df["nr_ano_epi"].astype(int).tolist(), reverse=True)
-    except Exception as e:
-        logger.error(f"Error fetching years: {str(e)}")
-        return [2026]
-
-
 def render_epidemic_timeseries(athena_service: AthenaService, disease: str):
     """Render time series analysis tab."""
 
     # ── Fetch available years ────────────────────────────────────
-    years = fetch_available_years(athena_service, disease)
+    years = fetch_available_years(athena_service, disease, TABLE_ALERTS_WEEKLY, "nr_ano_epi")
 
     # ── Filters in container at top ──────────────────────────────
     st.markdown("### Filtros")
