@@ -13,6 +13,9 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from utils.favicon import set_page_favicon
+set_page_favicon("\ud83e\udd16")
+
 from theme import COLOR_DARK_GRAY, COLOR_LIGHT_GRAY, COLOR_BORDER, COLOR_ORANGE
 from utils.shared_ui import render_header, render_footer
 
