@@ -13,13 +13,6 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-st.set_page_config(
-    page_title="Analista IA — EpiMind",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
 from theme import COLOR_DARK_GRAY, COLOR_LIGHT_GRAY, COLOR_BORDER, COLOR_ORANGE
 from utils.shared_ui import render_header, render_footer
 
