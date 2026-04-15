@@ -44,7 +44,7 @@ st.markdown(card_css(), unsafe_allow_html=True)
 
 
 @cached_query(ttl_seconds=300)
-def fetch_dq_logs(athena_service: AthenaService) -> pd.DataFrame:
+def fetch_dq_logs(_athena_service: AthenaService) -> pd.DataFrame:
     """Fetch quality logs from the quality_logs table."""
     query = f"""
     SELECT
@@ -65,7 +65,7 @@ def fetch_dq_logs(athena_service: AthenaService) -> pd.DataFrame:
     LIMIT 50000
     """
     try:
-        df = athena_service.query_logs(query)
+        df = _athena_service.query_logs(query)
         
         # Process durations
         df = ParserService.extract_execution_duration(df)

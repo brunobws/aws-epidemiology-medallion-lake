@@ -48,7 +48,7 @@ logger = get_logger(__name__)
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_weekly_series(athena_service: AthenaService, disease: str, year: int) -> pd.DataFrame:
+def fetch_weekly_series(_athena_service: AthenaService, disease: str, year: int) -> pd.DataFrame:
     """
     Fetch weekly time series for a disease and year.
     Aggregates across all municipalities.
@@ -72,7 +72,7 @@ def fetch_weekly_series(athena_service: AthenaService, disease: str, year: int) 
     ORDER BY dt_semana_epidemiologica
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         numeric_cols = ["week_num", "total_cases", "estimated_cases", "avg_rt",
                         "green_count", "yellow_count", "orange_count", "red_count", "municipalities"]
         for col in numeric_cols:

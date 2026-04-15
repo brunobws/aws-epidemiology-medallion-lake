@@ -51,7 +51,7 @@ MONTH_LABELS = {
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_demographic_data(athena_service: AthenaService, disease: str, year: int) -> pd.DataFrame:
+def fetch_demographic_data(_athena_service: AthenaService, disease: str, year: int) -> pd.DataFrame:
     """Fetch demographic profile data aggregated by age, sex, and region."""
     query = f"""
     SELECT
@@ -71,7 +71,7 @@ def fetch_demographic_data(athena_service: AthenaService, disease: str, year: in
     AND nr_ano_notificacao = {year}
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         numeric_cols = ["nr_notificacoes", "nr_casos_confirmados", "nr_obitos", "nr_curas", "nr_mes_notificacao"]
         for col in numeric_cols:
             if col in df.columns:

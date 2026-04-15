@@ -43,7 +43,7 @@ logger = get_logger(__name__)
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_ranking_data(athena_service: AthenaService, disease: str, year: int) -> pd.DataFrame:
+def fetch_ranking_data(_athena_service: AthenaService, disease: str, year: int) -> pd.DataFrame:
     """Fetch annual ranking data for municipalities."""
     query = f"""
     SELECT
@@ -68,7 +68,7 @@ def fetch_ranking_data(athena_service: AthenaService, disease: str, year: int) -
     ORDER BY nr_rank_estado
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         numeric_cols = [
             "vl_populacao", "vl_total_casos", "vl_incidencia_acumulada",
             "nr_max_alerta", "nr_semanas_alerta_vermelho", "nr_semanas_alerta_alto",

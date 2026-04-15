@@ -43,7 +43,7 @@ st.markdown(card_css(), unsafe_allow_html=True)
 
 
 @cached_query(ttl_seconds=300)
-def fetch_logs_data(athena_service: AthenaService) -> pd.DataFrame:
+def fetch_logs_data(_athena_service: AthenaService) -> pd.DataFrame:
     """Fetch execution logs from the logs table (last 90 days)."""
     query = f"""
     SELECT
@@ -69,7 +69,7 @@ def fetch_logs_data(athena_service: AthenaService) -> pd.DataFrame:
     LIMIT 10000
     """
     try:
-        df = athena_service.query_logs(query)
+        df = _athena_service.query_logs(query)
         
         # Process timestamps and durations
         df = ParserService.extract_execution_duration(df)

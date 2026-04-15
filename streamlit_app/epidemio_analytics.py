@@ -49,7 +49,7 @@ logger = get_logger(__name__)
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_current_alerts(athena_service: AthenaService, disease: str) -> pd.DataFrame:
+def fetch_current_alerts(_athena_service: AthenaService, disease: str) -> pd.DataFrame:
     """Fetch latest weekly alerts for specified disease."""
     query = f"""
     SELECT
@@ -68,7 +68,7 @@ def fetch_current_alerts(athena_service: AthenaService, disease: str) -> pd.Data
     ORDER BY nr_nivel_alerta DESC, vl_incidencia DESC
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         numeric_cols = [
             "nr_semana_epi", "nr_nivel_alerta", "vl_casos", "vl_populacao",
             "nr_ano_epi", "vl_incidencia", "vl_rt", "fl_epidemia",
@@ -85,7 +85,7 @@ def fetch_current_alerts(athena_service: AthenaService, disease: str) -> pd.Data
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_comparative_alerts(athena_service: AthenaService) -> pd.DataFrame:
+def fetch_comparative_alerts(_athena_service: AthenaService) -> pd.DataFrame:
     """Fetch latest alerts for all diseases for comparison."""
     query = f"""
     SELECT
@@ -99,7 +99,7 @@ def fetch_comparative_alerts(athena_service: AthenaService) -> pd.DataFrame:
     ORDER BY ds_doenca, nr_nivel_alerta
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         for col in ["nr_nivel_alerta", "count_municipalities"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -110,7 +110,7 @@ def fetch_comparative_alerts(athena_service: AthenaService) -> pd.DataFrame:
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_mesoregion_summary(athena_service: AthenaService, disease: str) -> pd.DataFrame:
+def fetch_mesoregion_summary(_athena_service: AthenaService, disease: str) -> pd.DataFrame:
     """Fetch summary statistics aggregated by mesoregion."""
     query = f"""
     SELECT
@@ -132,7 +132,7 @@ def fetch_mesoregion_summary(athena_service: AthenaService, disease: str) -> pd.
     ORDER BY total_cases DESC
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         for col in ["total_cases", "avg_rt", "max_alert_level", "municipalities_high_alert",
                     "total_municipalities", "municipalities_epidemic"]:
             if col in df.columns:
@@ -144,7 +144,7 @@ def fetch_mesoregion_summary(athena_service: AthenaService, disease: str) -> pd.
 
 
 @cached_query(ttl_seconds=CACHE_TTL)
-def fetch_kpi_trends(athena_service: AthenaService, disease: str) -> pd.DataFrame:
+def fetch_kpi_trends(_athena_service: AthenaService, disease: str) -> pd.DataFrame:
     """Fetch last 8 weeks of aggregate KPIs for sparkline trend lines."""
     query = f"""
     SELECT
@@ -160,7 +160,7 @@ def fetch_kpi_trends(athena_service: AthenaService, disease: str) -> pd.DataFram
     LIMIT 8
     """
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         for col in ["total_cases", "avg_rt", "municipalities_epidemic", "pct_green"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)

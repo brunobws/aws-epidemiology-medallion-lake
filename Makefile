@@ -57,7 +57,7 @@ ec2-setup:
 
 ec2-deploy:
 	@echo "Pulling latest code..."
-	git pull origin main
+	git pull origin master
 	@echo "Building Docker image..."
 	make docker-build
 	@echo "Stopping old containers..."

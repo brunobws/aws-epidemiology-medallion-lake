@@ -17,7 +17,7 @@ from config import CACHE_TTL
 
 @cached_query(ttl_seconds=CACHE_TTL)
 def fetch_available_years(
-    athena_service: AthenaService,
+    _athena_service: AthenaService,
     disease: str,
     table_name: str,
     year_column: str = "nr_ano_epi",
@@ -26,7 +26,7 @@ def fetch_available_years(
     Fetch available years from a specified table for a given disease.
     
     Args:
-        athena_service: Initialized AthenaService instance
+        _athena_service: Initialized AthenaService instance
         disease: Disease name (e.g., 'dengue', 'chikungunya', 'zika')
         table_name: Table name to query (e.g., tb_ft_alerta_semanal)
         year_column: Column name for year (default: nr_ano_epi)
@@ -50,7 +50,7 @@ def fetch_available_years(
     """
     
     try:
-        df = athena_service.query_gold(query)
+        df = _athena_service.query_gold(query)
         if df.empty:
             return [2026]
         return sorted(df[year_column].astype(int).tolist(), reverse=True)
