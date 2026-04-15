@@ -13,6 +13,13 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+st.set_page_config(
+    page_title="Analista IA — EpiMind",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 from theme import COLOR_DARK_GRAY, COLOR_LIGHT_GRAY, COLOR_BORDER, COLOR_ORANGE
 from utils.shared_ui import render_header, render_footer
 
@@ -114,7 +121,7 @@ st.markdown("""
     </p>
     <div class="ia-tech-chips">
         <span class="ia-chip">AWS Bedrock</span>
-        <span class="ia-chip">Claude Sonnet</span>
+        <span class="ia-chip">LLM Avançado</span>
         <span class="ia-chip">Amazon Athena</span>
         <span class="ia-chip">Text-to-SQL</span>
         <span class="ia-chip">Gold Layer</span>
@@ -320,8 +327,8 @@ with col_info:
         <div class="arch-step">
             <div class="arch-num">2</div>
             <div class="arch-text">
-                <strong>Claude gera o SQL</strong>
-                <span>Amazon Bedrock (Claude Sonnet) interpreta a pergunta e monta uma query otimizada para o Athena.</span>
+                <strong>Modelo de IA gera o SQL</strong>
+                <span>O agente de IA via AWS Bedrock interpreta a pergunta em linguagem natural e monta uma query otimizada para o Athena.</span>
             </div>
         </div>
         <div class="arch-step">
@@ -335,7 +342,7 @@ with col_info:
             <div class="arch-num">4</div>
             <div class="arch-text">
                 <strong>Resposta contextualizada</strong>
-                <span>Claude interpreta os resultados e responde com linguagem epidemiologica adequada.</span>
+                <span>O modelo de IA interpreta os resultados e responde com linguagem epidemiologica adequada e insights acionáveis.</span>
             </div>
         </div>
     </div>

@@ -308,7 +308,7 @@ def render_logs_observability(athena_service: AthenaService):
 
     st.dataframe(
         display_df.sort_values("Start Time", ascending=False),
-        width='stretch',
+        use_container_width=True,
         height=400,
     )
 
