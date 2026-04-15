@@ -118,7 +118,7 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     """Render ranking and hotspots tab."""
 
     # ── Fetch available years ────────────────────────────────────
-    years = fetch_available_years(athena_service, disease)
+    years = fetch_available_years(athena_service, disease, TABLE_RANKING_ANNUAL, "nr_ano_epi")
 
     # ── Filters in container at top ──────────────────────────────
     st.markdown("### Filtros")
