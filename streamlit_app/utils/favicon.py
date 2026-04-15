@@ -4,10 +4,11 @@
 #
 # Description:
 #   UI helper for dynamic favicon by emoji.
-#   Injects SVG favicon into page head via HTML.
+#   Injects SVG favicon into page head via JavaScript.
 ####################################################################
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 def set_page_favicon(emoji: str) -> None:
@@ -20,10 +21,24 @@ def set_page_favicon(emoji: str) -> None:
     Example:
         set_page_favicon("📊")
     """
-    # Encode emoji properly for SVG
+    # Create SVG favicon as data URI
     favicon_svg = f"""data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>{emoji}</text></svg>"""
     
-    st.markdown(
-        f"""<link rel="icon" href="{favicon_svg}" />""",
-        unsafe_allow_html=True
-    )
+    # Use JavaScript to set favicon in page head
+    html_code = f"""
+    <script>
+    // Remove existing favicon if any
+    const existingFavicon = document.querySelector("link[rel='icon']");
+    if (existingFavicon) {{
+        existingFavicon.remove();
+    }}
+    
+    // Create and add new favicon link
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.href = '{favicon_svg}';
+    document.head.appendChild(link);
+    </script>
+    """
+    
+    components.html(html_code, height=0)

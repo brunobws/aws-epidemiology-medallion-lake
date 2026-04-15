@@ -279,7 +279,7 @@ def render_data_quality(athena_service: AthenaService):
         
         st.dataframe(
             display_tests.sort_values("start_time", ascending=False),
-            width='stretch',
+            use_container_width=True,
             height=500
         )
         
