@@ -20,16 +20,10 @@ def set_page_favicon(emoji: str) -> None:
     Example:
         set_page_favicon("📊")
     """
-    favicon_svg = f"""
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-        <text y='75' font-size='75' dominant-baseline='middle'>{emoji}</text>
-    </svg>
-    """
+    # Encode emoji properly for SVG
+    favicon_svg = f"""data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>{emoji}</text></svg>"""
     
     st.markdown(
-        f"""
-        <link rel="icon" href="data:image/svg+xml,
-        {favicon_svg.replace('"', '&quot;').replace('#', '%23')}" />
-        """,
+        f"""<link rel="icon" href="{favicon_svg}" />""",
         unsafe_allow_html=True
     )

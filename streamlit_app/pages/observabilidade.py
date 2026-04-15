@@ -14,7 +14,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.favicon import set_page_favicon
-set_page_favicon("\ud83d\udd0d")
+set_page_favicon("🔍")
 
 from utils.shared_ui import render_header, render_sidebar, render_footer, require_athena, render_floating_ia_button
 
