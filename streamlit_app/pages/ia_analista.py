@@ -1,14 +1,29 @@
 ####################################################################
 # Author: Bruno William da Silva
-# Date: 03/03/2026
+# Date: 17/04/2026
 #
 # Description:
-#   IA Analista page — Natural language Q&A over epidemiological data.
-#   Shell/mockup: visual only, not yet connected to AWS Bedrock.
+#   IA Analista page — EpiMind conversational assistant.
+#   Connects natural language questions to the Gold layer via a
+#   two-step pipeline:
+#     1. AWS Bedrock (Claude) generates a safe SELECT SQL.
+#     2. Query runs on Athena (reuses AthenaService).
+#     3. Bedrock receives the results and returns a full
+#        epidemiological analysis in Brazilian Portuguese.
+#
+#   Key Features:
+#   - st.chat_input + persistent message history (session_state)
+#   - Out-of-scope guard (polite refusal for non-arbovirose topics)
+#   - SQL safety validation (SELECT-only)
+#   - Risk Score insights embedded in analysis prompt
 ####################################################################
 
+########### imports ################
 import sys
+import traceback
 from pathlib import Path
+
+import pandas as pd
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -17,8 +32,200 @@ from utils.favicon import set_page_favicon
 set_page_favicon("🤖")
 
 from theme import COLOR_DARK_GRAY, COLOR_LIGHT_GRAY, COLOR_BORDER, COLOR_ORANGE
-from utils.shared_ui import render_header, render_footer
+from utils.shared_ui import render_header, render_footer, get_athena_service
+from utils.bedrock_service import BedrockService
+from utils.logger import get_logger
+###################################
 
+logger = get_logger(__name__)
+
+
+####################################################################
+# CONSTANTS
+####################################################################
+AVATAR_USER      = "🧑‍💼"
+AVATAR_ASSISTANT = "🤖"
+MAX_RESULT_ROWS  = 50   # rows sent to LLM to avoid huge prompts
+HISTORY_KEY      = "epimind_chat_history"
+
+SAMPLE_QUESTIONS = [
+    "Quais as 5 cidades com maior incidência de dengue em 2026?",
+    "Quais municípios estão em alerta vermelho agora?",
+    "Qual o Rt médio do estado na última semana disponível?",
+    "Mostre o perfil demográfico das notificações de chikungunya",
+    "Quais mesorregiões têm epidemia ativa de dengue?",
+    "Ranking dos municípios com mais semanas de Rt > 1 em 2026",
+]
+
+
+####################################################################
+# CACHED SERVICE INSTANCES
+####################################################################
+@st.cache_resource
+def get_bedrock_service() -> BedrockService:
+    """Initialize and cache the Bedrock client for the session."""
+    try:
+        svc = BedrockService()
+        logger.info("BedrockService initialized successfully")
+        return svc
+    except Exception as exc:
+        logger.error(f"Failed to initialize BedrockService: {exc}")
+        return None
+
+
+####################################################################
+# HELPERS
+####################################################################
+def _df_to_markdown(df: pd.DataFrame, max_rows: int = MAX_RESULT_ROWS) -> tuple[str, int]:
+    """
+    Convert a DataFrame to a compact Markdown table for the LLM prompt.
+
+    Args:
+        df:       Query result DataFrame.
+        max_rows: Max rows to include (avoids huge prompts).
+
+    Returns:
+        Tuple of (markdown_string, total_row_count).
+    """
+    total = len(df)
+    preview = df.head(max_rows)
+    md = preview.to_markdown(index=False) if not preview.empty else "_Nenhum dado retornado._"
+    if total > max_rows:
+        md += f"\n\n_(exibindo {max_rows} de {total} linhas)_"
+    return md, total
+
+
+def _init_history() -> None:
+    """Ensure chat history exists in session state."""
+    if HISTORY_KEY not in st.session_state:
+        st.session_state[HISTORY_KEY] = []
+
+
+def _add_message(role: str, content: str) -> None:
+    """Append a message to the chat history."""
+    st.session_state[HISTORY_KEY].append({"role": role, "content": content})
+
+
+def _render_history() -> None:
+    """Render all previous messages from session state."""
+    for msg in st.session_state[HISTORY_KEY]:
+        avatar = AVATAR_USER if msg["role"] == "user" else AVATAR_ASSISTANT
+        with st.chat_message(msg["role"], avatar=avatar):
+            st.markdown(msg["content"])
+
+
+####################################################################
+# MAIN PIPELINE
+####################################################################
+def process_question(question: str, bedrock: BedrockService, athena) -> None:
+    """
+    Full Text-to-SQL pipeline for one user question.
+
+    Steps:
+        0. Display user message.
+        1. Generate SQL with Bedrock.
+        2. Execute SQL on Athena.
+        3. Generate analysis with Bedrock.
+        4. Display assistant response.
+
+    Args:
+        question: User's natural language question.
+        bedrock:  BedrockService instance.
+        athena:   AthenaService instance.
+    """
+    # ── Step 0: Show user message ──────────────────────────────────
+    _add_message("user", question)
+    with st.chat_message("user", avatar=AVATAR_USER):
+        st.markdown(question)
+
+    # ── Step 1: Generate SQL ───────────────────────────────────────
+    with st.chat_message("assistant", avatar=AVATAR_ASSISTANT):
+        with st.status("🧠 Analisando sua pergunta...", expanded=False) as status:
+
+            try:
+                status.update(label="🧠 Gerando consulta SQL...")
+                sql = bedrock.generate_sql(question)
+
+            except (RuntimeError, ValueError) as exc:
+                error_msg = f"⚠️ Erro ao gerar SQL: {exc}"
+                st.error(error_msg)
+                _add_message("assistant", error_msg)
+                logger.error(f"SQL generation error: {exc}")
+                return
+
+            # Out-of-scope response
+            if sql is None:
+                out_of_scope_msg = (
+                    "Olá! Sou o **EpiMind**, especializado em vigilância "
+                    "epidemiológica de **dengue, chikungunya e zika em São Paulo**.\n\n"
+                    "Sua pergunta parece estar fora do meu escopo. Posso ajudar com:\n"
+                    "- Incidência, Rt e níveis de alerta por município\n"
+                    "- Rankings e hotspots geográficos em SP\n"
+                    "- Perfis demográficos das notificações\n"
+                    "- Tendências semanais e comparativos anuais\n\n"
+                    "Reformule sua pergunta e terá prazer em responder! 🦟"
+                )
+                st.markdown(out_of_scope_msg)
+                _add_message("assistant", out_of_scope_msg)
+                status.update(label="✅ Fora do escopo — respondido", state="complete")
+                return
+
+            # Show generated SQL in an expander (informational)
+            with st.expander("🔍 SQL gerado", expanded=False):
+                st.code(sql, language="sql")
+
+            # ── Step 2: Execute on Athena ──────────────────────────
+            status.update(label="⚡ Executando consulta no Athena...")
+            try:
+                df = athena.query_gold(sql)
+            except Exception as exc:
+                tb = traceback.format_exc()
+                logger.error(f"Athena query failed:\n{tb}")
+                error_msg = (
+                    f"⚠️ **Erro ao executar a consulta no Athena:**\n\n"
+                    f"```\n{exc}\n```\n\n"
+                    "Tente reformular sua pergunta ou verifique os logs."
+                )
+                st.error(error_msg)
+                _add_message("assistant", error_msg)
+                status.update(label="❌ Erro no Athena", state="error")
+                return
+
+            # ── Step 3: Generate analysis ──────────────────────────
+            status.update(label="📊 Gerando análise epidemiológica...")
+            md_result, row_count = _df_to_markdown(df)
+
+            try:
+                analysis = bedrock.generate_analysis(
+                    question=question,
+                    sql=sql,
+                    query_result=md_result,
+                    row_count=row_count,
+                )
+            except RuntimeError as exc:
+                error_msg = f"⚠️ Erro ao gerar análise: {exc}"
+                st.error(error_msg)
+                _add_message("assistant", error_msg)
+                status.update(label="❌ Erro na análise", state="error")
+                return
+
+            status.update(label="✅ Análise concluída", state="complete")
+
+        # ── Step 4: Display analysis ───────────────────────────────
+        st.markdown(analysis)
+
+        # Optionally show raw DataFrame
+        if not df.empty:
+            with st.expander(f"📋 Dados brutos ({row_count} linhas)", expanded=False):
+                st.dataframe(df, use_container_width=True)
+
+        _add_message("assistant", analysis)
+        logger.info(f"Pipeline complete: question='{question[:80]}', rows={row_count}")
+
+
+####################################################################
+# PAGE LAYOUT
+####################################################################
 render_header()
 
 # ── Hero Banner ────────────────────────────────────────────────────
@@ -108,16 +315,16 @@ st.markdown("""
 <div class="ia-hero">
     <div class="ia-badge">
         <span class="ia-badge-dot"></span>
-        Em desenvolvimento
+        Powered by AWS Bedrock
     </div>
-    <h1 class="ia-title">Analista IA</h1>
+    <h1 class="ia-title">EpiMind — Analista IA</h1>
     <p class="ia-subtitle">
-        Faca perguntas em linguagem natural sobre os dados epidemiologicos de SP.
+        Faça perguntas em linguagem natural sobre os dados epidemiológicos de SP.
         A IA consulta o Data Lake em tempo real e responde com insights claros e contextualizados.
     </p>
     <div class="ia-tech-chips">
         <span class="ia-chip">AWS Bedrock</span>
-        <span class="ia-chip">LLM Avançado</span>
+        <span class="ia-chip">Claude Haiku</span>
         <span class="ia-chip">Amazon Athena</span>
         <span class="ia-chip">Text-to-SQL</span>
         <span class="ia-chip">Gold Layer</span>
@@ -125,11 +332,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Layout: chat (left) | cards (right) ───────────────────────────
+# ── Layout: chat (left) | info (right) ────────────────────────────
 col_chat, col_info = st.columns([3, 2], gap="large")
 
 with col_chat:
-    # ── Sample questions ─────────────────────────────────────────
+    # ── Sample question chips (display-only labels) ───────────────
     st.markdown("""
     <style>
     .q-chip {
@@ -145,7 +352,6 @@ with col_chat:
         cursor: default;
         margin: 4px 4px 4px 0;
         white-space: nowrap;
-        transition: background 0.15s;
     }
     .q-section {
         font-size: 12px;
@@ -158,87 +364,55 @@ with col_chat:
     </style>
     <p class="q-section">Perguntas de exemplo</p>
     <div style="display:flex; flex-wrap:wrap; gap:0; margin-bottom:20px;">
-        <span class="q-chip">Qual cidade teve mais casos de dengue em 2024?</span>
-        <span class="q-chip">Quais municípios estão em nível vermelho agora?</span>
-        <span class="q-chip">Qual a incidência média na Grande SP esta semana?</span>
-        <span class="q-chip">Mostre o Rt das mesorregiões com epidemia ativa</span>
-        <span class="q-chip">Perfil demográfico das notificações de chikungunya</span>
-        <span class="q-chip">Ranking de incidencia em 2023 vs 2024</span>
+    """ + "".join(f'<span class="q-chip">{q}</span>' for q in SAMPLE_QUESTIONS) + """
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Mockup chat messages ──────────────────────────────────────
-    with st.chat_message("user", avatar="🧑‍💼"):
-        st.markdown("Quais as 5 cidades com maior incidência de dengue na última semana epidemiológica?")
+    # ── Initialize chat state & render history ────────────────────
+    _init_history()
+    _render_history()
 
-    with st.chat_message("assistant", avatar="🤖"):
-        st.markdown("""
-Com base nos dados da semana epidemiológica mais recente disponível no Data Lake:
+    # ── Services (lazy-loaded, cached) ────────────────────────────
+    bedrock_service = get_bedrock_service()
+    athena_service  = get_athena_service()
 
-| # | Município | Incidência (por 100k) | Nível de Alerta |
-|---|---|---|---|
-| 1 | São José do Rio Preto | 1.847 | Vermelho |
-| 2 | Bauru | 1.203 | Vermelho |
-| 3 | Ribeirão Preto | 987 | Laranja |
-| 4 | Presidente Prudente | 754 | Laranja |
-| 5 | Araçatuba | 641 | Amarelo |
+    # ── Chat input ────────────────────────────────────────────────
+    user_input = st.chat_input(
+        "Pergunte sobre os dados epidemiológicos de SP...",
+        disabled=(bedrock_service is None or athena_service is None),
+        key="epimind_chat_input",
+    )
 
-**Obs:** Todas essas cidades estão no interior paulista, padrão típico do perfil sazonal de dengue em SP. Mesorregiões de **Bauru** e **Araraquara** concentram os maiores focos ativos.
-        """)
+    # ── Service availability warnings ─────────────────────────────
+    if bedrock_service is None:
+        st.error(
+            "⚠️ **AWS Bedrock indisponível.** Verifique as credenciais AWS "
+            "e as permissões IAM para `bedrock:InvokeModel` na região `sa-east-1`."
+        )
 
-    with st.chat_message("user", avatar="🧑‍💼"):
-        st.markdown("E como está o Rt médio do estado comparado à semana anterior?")
+    if athena_service is None:
+        st.error(
+            "⚠️ **AWS Athena indisponível.** Verifique as credenciais AWS "
+            "e as permissões IAM para Athena na região `sa-east-1`."
+        )
 
-    with st.chat_message("assistant", avatar="🤖"):
-        st.markdown("""
-O **Rt médio estadual** na última semana foi de **1.34**, indicando transmissão crescente.
+    # ── Process new message ───────────────────────────────────────
+    if user_input and bedrock_service and athena_service:
+        process_question(
+            question=user_input.strip(),
+            bedrock=bedrock_service,
+            athena=athena_service,
+        )
 
-- Semana anterior: Rt = 1.18 (+13.6%)
-- Municípios com Rt > 1: **312 de 645** (48.4%)
-- Municípios em epidemia ativa: **87** *(fl_epidemia = 1)*
-
-O aumento é consistente com o histórico sazonal do período — a Série Temporal mostra que o pico tipicamente ocorre nas próximas 3 a 5 semanas.
-        """)
-
-    # ── Disabled chat input ───────────────────────────────────────
-    st.markdown("""
-    <style>
-    .chat-disabled-wrap {
-        position: relative;
-        margin-top: 8px;
-    }
-    .chat-disabled-overlay {
-        position: absolute;
-        inset: 0;
-        background: rgba(255,255,255,0.6);
-        border-radius: 8px;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .chat-disabled-label {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 5px 14px;
-        border-radius: 20px;
-        letter-spacing: 0.3px;
-    }
-    </style>
-    <div class="chat-disabled-wrap">
-        <div class="chat-disabled-overlay">
-            <span class="chat-disabled-label">Disponível em breve</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.chat_input("Pergunte sobre os dados epidemiológicos...", disabled=True)
+    # ── Clear history button ──────────────────────────────────────
+    if st.session_state.get(HISTORY_KEY):
+        if st.button("🗑️ Limpar conversa", key="clear_chat", use_container_width=False):
+            st.session_state[HISTORY_KEY] = []
+            st.rerun()
 
 
 with col_info:
-    # ── How it works ──────────────────────────────────────────────
+    # ── How it works card ─────────────────────────────────────────
     st.markdown("""
     <style>
     .arch-card {
@@ -309,67 +483,70 @@ with col_info:
         letter-spacing: 0.8px;
         margin: 0 0 12px 0;
     }
+    .risk-card {
+        background: rgba(255,153,0,0.06);
+        border: 1px solid rgba(255,153,0,0.3);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        font-size: 12px;
+        color: #37475A;
+        line-height: 1.6;
+    }
+    .risk-card strong { color: #232F3E; }
     </style>
 
     <div class="arch-card">
-        <p class="section-label">Como vai funcionar</p>
+        <p class="section-label">Como funciona</p>
         <div class="arch-step">
             <div class="arch-num">1</div>
             <div class="arch-text">
                 <strong>Sua pergunta</strong>
-                <span>Voce digita em linguagem natural, sem precisar saber SQL.</span>
+                <span>Você digita em linguagem natural, sem precisar saber SQL.</span>
             </div>
         </div>
         <div class="arch-step">
             <div class="arch-num">2</div>
             <div class="arch-text">
-                <strong>Modelo de IA gera o SQL</strong>
-                <span>O agente de IA via AWS Bedrock interpreta a pergunta em linguagem natural e monta uma query otimizada para o Athena.</span>
+                <strong>IA gera o SQL</strong>
+                <span>Claude (Bedrock) interpreta a pergunta e monta uma query segura para o Athena.</span>
             </div>
         </div>
         <div class="arch-step">
             <div class="arch-num">3</div>
             <div class="arch-text">
                 <strong>Consulta no Data Lake</strong>
-                <span>O SQL roda direto nas tabelas Gold do Athena — dados reais, sem intermediarios.</span>
+                <span>O SQL roda direto nas tabelas Gold — dados reais, sem intermediários.</span>
             </div>
         </div>
         <div class="arch-step">
             <div class="arch-num">4</div>
             <div class="arch-text">
-                <strong>Resposta contextualizada</strong>
-                <span>O modelo de IA interpreta os resultados e responde com linguagem epidemiologica adequada e insights acionáveis.</span>
+                <strong>Análise contextualizada</strong>
+                <span>A IA interpreta os resultados e responde com linguagem epidemiológica e insights acionáveis.</span>
             </div>
         </div>
     </div>
 
     <div class="cap-card">
-        <p class="section-label">Capacidades previstas</p>
-        <div class="cap-item">
-            <span class="cap-icon">📊</span>
-            Comparativos temporais e sazonais
-        </div>
-        <div class="cap-item">
-            <span class="cap-icon">🗺️</span>
-            Rankings e hotspots geograficos
-        </div>
-        <div class="cap-item">
-            <span class="cap-icon">📈</span>
-            Tendencias de Rt e nivel de alerta
-        </div>
-        <div class="cap-item">
-            <span class="cap-icon">👥</span>
-            Perfis demográficos e desfechos
-        </div>
-        <div class="cap-item">
-            <span class="cap-icon">🔍</span>
-            Consultas por município, mesorregião ou SE
-        </div>
-        <div class="cap-item">
-            <span class="cap-icon">⚠️</span>
-            Alertas e situacoes de epidemia ativa
-        </div>
+        <p class="section-label">Capacidades</p>
+        <div class="cap-item"><span class="cap-icon">📊</span>Comparativos temporais e sazonais</div>
+        <div class="cap-item"><span class="cap-icon">🗺️</span>Rankings e hotspots geográficos</div>
+        <div class="cap-item"><span class="cap-icon">📈</span>Tendências de Rt e nível de alerta</div>
+        <div class="cap-item"><span class="cap-icon">👥</span>Perfis demográficos e desfechos</div>
+        <div class="cap-item"><span class="cap-icon">🔍</span>Consultas por município, mesorregião ou SE</div>
+        <div class="cap-item"><span class="cap-icon">⚠️</span>Alertas e situações de epidemia ativa</div>
+    </div>
+
+    <div class="risk-card">
+        <strong>⚡ Pontuação de Risco</strong><br/>
+        A IA avalia automaticamente a combinação de
+        <strong>velocidade de crescimento (Rt)</strong> +
+        <strong>incidência relativa</strong> para identificar
+        municípios de alto risco — especialmente cidades pequenas
+        com taxa/100k elevada.
     </div>
     """, unsafe_allow_html=True)
+
 
 render_footer()
