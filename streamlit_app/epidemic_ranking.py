@@ -140,13 +140,46 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
         st.warning("Nenhum dado de ranking disponivel.")
         return
 
-    # ── Calculate priority score for better prioritization ──────
-    # Priority = Rt (growth factor) * Incidence (volume factor)
-    # This identifies municipalities that are both growing AND have high impact
-    df["vl_prioridade"] = (
-        (df["vl_rt_medio"] * 0.5) +  # 50% weight to growth (Rt)
-        (df["vl_incidencia_acumulada"] / df["vl_incidencia_acumulada"].max() * 0.5)  # 50% weight to incidence (normalized)
+    # ── Risk Score (duration-adjusted, population-filtered) ────
+    #
+    # Two corrections applied here:
+    #
+    # A) Population filter (>= 5,000 hab):
+    #    Tiny municipalities (< 5k) generate extreme Rt values from a single
+    #    case (e.g. Rt=9 from 1 case in a town of 900). These are statistical
+    #    noise, not public-health priorities. We cap the risk score to 0 for
+    #    them so they don't pollute the ranking visible to analysts.
+    #
+    # B) Duration-adjusted Rt:
+    #    vl_rt_medio is the annual average. A city with Rt=9 for just 1 week
+    #    is far less dangerous than one with Rt=2 for 8 weeks. We multiply
+    #    by (nr_semanas_rt_acima_1 / total_semanas_ano) so that sustained
+    #    transmission outweighs brief spikes.
+    #
+    #    Formula:
+    #      rt_ajustado = vl_rt_medio × (nr_semanas_rt_acima_1 / semanas_no_ano)
+    #      pontuacao   = (rt_ajustado × 0.5) + (incidencia_normalizada × 0.5)
+
+    TOTAL_SEMANAS_ANO = int(df["nr_semanas_rt_acima_1"].max()) if df["nr_semanas_rt_acima_1"].max() > 0 else 1
+    # Use the max number of weeks with data as the denominator — stays accurate
+    # as epidemiological weeks accumulate throughout the year.
+    # Fallback: derive from the number of distinct weeks in the dataset if available.
+    _semanas_disponiveis = df["nr_semanas_rt_acima_1"].replace(0, pd.NA).dropna()
+    TOTAL_SEMANAS_ANO = max(int(_semanas_disponiveis.max()) if not _semanas_disponiveis.empty else 1, 11)
+    MIN_POPULACAO     = 5_000  # minimum population to appear in the risk ranking
+
+    df["vl_rt_ajustado"] = (
+        df["vl_rt_medio"]
+        * (df["nr_semanas_rt_acima_1"] / TOTAL_SEMANAS_ANO).clip(upper=1.0)
     )
+
+    df["vl_prioridade"] = (
+        (df["vl_rt_ajustado"] * 0.5)
+        + (df["vl_incidencia_acumulada"] / df["vl_incidencia_acumulada"].max() * 0.5)
+    )
+
+    # Zero out risk score for very small municipalities (statistical noise)
+    df.loc[df["vl_populacao"] < MIN_POPULACAO, "vl_prioridade"] = 0.0
     
     # ── Add Porte classification (for Part 4)
     df["porte"] = df["vl_populacao"].apply(classificar_porte)
@@ -161,12 +194,15 @@ def render_epidemic_ranking(athena_service: AthenaService, disease: str):
     st.write("")  # Spacing
 
     # ── PART 2: Banner de alerta rápido no topo ──────────────────
-    # Identificar municípios críticos antes do banner
-    critical_threshold_rt = 1.2
+    # Critical municipalities: duration-adjusted Rt > threshold AND
+    # incidence above the 90th percentile (same logic as vl_prioridade).
+    # Uses vl_rt_ajustado (not raw vl_rt_medio) so a 1-week spike does not
+    # trigger the alert — sustained growth is what matters operationally.
+    critical_threshold_rt = 0.2   # adjusted Rt threshold (≈ Rt_medio=1.2 sustained for ~2 weeks)
     p90_incidence = df["vl_incidencia_acumulada"].quantile(0.90)
-    
+
     critical_mun = df[
-        (df["vl_rt_medio"] > critical_threshold_rt) & 
+        (df["vl_rt_ajustado"] > critical_threshold_rt) &
         (df["vl_incidencia_acumulada"] > p90_incidence)
     ].sort_values("vl_prioridade", ascending=False)
     
@@ -462,10 +498,12 @@ Volume alto não significa crescimento rápido — e vice-versa. Leia os dois gr
         )
         
         st.caption(
-            "💡 Por que aparecem municípios pequenos? Uma cidade com 200 "
-            "infectados por 100 mil habitantes está mais impactada do que "
-            "uma metrópole com 50 por 100 mil — mesmo tendo menos casos. "
-            "Olhamos a proporção, não o número total."
+            "💡 **Como funciona a Pontuação de Risco?** "
+            "Combina dois fatores: (1) **Rt ajustado pela duração** — cidades com transmissão "
+            "acelerada POR VÁRIAS SEMANAS têm peso maior que surtos rápidos de uma semana; "
+            "(2) **incidência relativa** — taxa por 100 mil, não volume absoluto. "
+            "Municípios com menos de 5.000 habitantes são excluídos pois 1 caso gera "
+            "Rt estatisticamente extremo sem representar risco operacional real."
         )
     
     st.divider()
