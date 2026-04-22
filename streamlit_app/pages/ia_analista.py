@@ -170,9 +170,9 @@ def process_question(question: str, bedrock: BedrockService, athena) -> None:
                 status.update(label="✅ Fora do escopo — respondido", state="complete")
                 return
 
-            # Show generated SQL in an expander (informational)
-            with st.expander("🔍 SQL gerado", expanded=False):
-                st.code(sql, language="sql")
+            # Show generated SQL inside the status container (informational)
+            st.markdown("**🔍 SQL gerado**")
+            st.code(sql, language="sql")
 
             # ── Step 2: Execute on Athena ──────────────────────────
             status.update(label="⚡ Executando consulta no Athena...")
