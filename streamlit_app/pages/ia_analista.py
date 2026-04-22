@@ -176,26 +176,46 @@ def process_question(question: str, bedrock: BedrockService, athena) -> None:
                 md_result = "_Pergunta de conhecimento geral._"
                 row_count = 0
             else:
-                # Show generated SQL inside the status container (informational)
-                st.markdown("**🔍 SQL gerado**")
-                st.code(sql, language="sql")
+                max_retries = 2
+                for attempt in range(max_retries + 1):
+                    # Show generated SQL inside the status container (informational)
+                    if attempt == 0:
+                        st.markdown("**🔍 SQL gerado**")
+                    else:
+                        st.markdown(f"**🔄 SQL corrigido (Tentativa {attempt})**")
+                    st.code(sql, language="sql")
 
-                # ── Step 2: Execute on Athena ──────────────────────────
-                status.update(label="⚡ Executando consulta no Athena...")
-                try:
-                    df = athena.query_gold(sql)
-                except Exception as exc:
-                    tb = traceback.format_exc()
-                    logger.error(f"Athena query failed:\n{tb}")
-                    error_msg = (
-                        f"⚠️ **Erro ao executar a consulta no Athena:**\n\n"
-                        f"```\n{exc}\n```\n\n"
-                        "Tente reformular sua pergunta ou verifique os logs."
-                    )
-                    st.error(error_msg)
-                    _add_message("assistant", error_msg)
-                    status.update(label="❌ Erro no Athena", state="error")
-                    return
+                    # ── Step 2: Execute on Athena ──────────────────────────
+                    status.update(label=f"⚡ Executando consulta no Athena (Tentativa {attempt+1})...")
+                    try:
+                        df = athena.query_gold(sql)
+                        break  # Sucesso, sai do loop de retry
+                    except Exception as exc:
+                        tb = traceback.format_exc()
+                        logger.warning(f"Athena query failed on attempt {attempt}: {exc}")
+                        
+                        if attempt < max_retries:
+                            status.update(label=f"🔄 Erro no Athena. Corrigindo SQL (Tentativa {attempt+1})...")
+                            try:
+                                sql = bedrock.fix_sql(question, sql, str(exc))
+                            except Exception as fix_exc:
+                                logger.error(f"Failed to fix SQL: {fix_exc}")
+                                error_msg = f"⚠️ **Erro ao tentar corrigir a consulta:**\n\n```\n{fix_exc}\n```"
+                                st.error(error_msg)
+                                _add_message("assistant", error_msg)
+                                status.update(label="❌ Erro na correção do SQL", state="error")
+                                return
+                        else:
+                            logger.error(f"Athena query failed after {max_retries} retries:\n{tb}")
+                            error_msg = (
+                                f"⚠️ **Erro ao executar a consulta no Athena após {max_retries} tentativas:**\n\n"
+                                f"```\n{exc}\n```\n\n"
+                                "Tente reformular sua pergunta ou verifique os logs."
+                            )
+                            st.error(error_msg)
+                            _add_message("assistant", error_msg)
+                            status.update(label="❌ Erro no Athena", state="error")
+                            return
 
                 # ── Step 3: Generate analysis ──────────────────────────
                 status.update(label="📊 Gerando análise epidemiológica...")

@@ -120,6 +120,7 @@ Columns:
   nr_max_alerta               int    -- max alert level reached (1-4)
   nr_semanas_alerta_vermelho  int    -- weeks at red alert (level 4)
   nr_semanas_alerta_alto      int    -- weeks at high/critical alert (level >= 3)
+  -- NOTE: ds_nivel_alerta does NOT exist in tb_ft_ranking_anual. Use nr_max_alerta (1-4) instead.
   nr_semanas_transmissao_ativa int   -- weeks with confirmed active transmission
   nr_semanas_rt_acima_1       int    -- weeks with Rt > 1 (epidemic growth)
   vl_rt_medio                 double -- average Rt across the year
@@ -320,6 +321,39 @@ class BedrockService:
         if not self._is_safe_sql(sql):
             logger.warning(f"Unsafe SQL detected and blocked: {sql[:120]}")
             raise ValueError("O modelo gerou uma query não permitida (não-SELECT). Tente reformular a pergunta.")
+
+        return sql
+
+    def fix_sql(self, question: str, wrong_sql: str, error_msg: str) -> str:
+        """
+        Ask the LLM to fix a SQL query that failed in Athena.
+
+        Args:
+            question: Original user question.
+            wrong_sql: The SQL that failed.
+            error_msg: The error message returned by Athena.
+
+        Returns:
+            The corrected SQL string.
+        """
+        prompt = (
+            f"The user asked: \"{question}\"\n\n"
+            f"You generated this SQL query:\n```sql\n{wrong_sql}\n```\n\n"
+            f"But it failed to execute with this error:\n{error_msg}\n\n"
+            "Look carefully at the table schemas provided. For example, if a COLUMN_NOT_FOUND error occurred, "
+            "it means you used a column that does not exist in that table. "
+            "Fix the SQL to resolve the error. Respond ONLY with a valid Presto/Athena SQL SELECT statement "
+            "— no markdown, no explanation. Just the raw SQL ending with a semicolon."
+        )
+
+        raw = self._invoke(prompt, temperature=0.0)
+        logger.info(f"SQL fix raw output (first 200 chars): {raw[:200]}")
+
+        sql = self._extract_sql(raw)
+
+        if not self._is_safe_sql(sql):
+            logger.warning(f"Unsafe SQL detected during fix: {sql[:120]}")
+            raise ValueError("O modelo tentou corrigir a query mas gerou uma instrução não permitida (não-SELECT).")
 
         return sql
 
