@@ -294,6 +294,9 @@ class BedrockService:
             "If the question is outside your scope (not about dengue, "
             "chikungunya, or zika in São Paulo), respond ONLY with the "
             "exact token: OUT_OF_SCOPE\n\n"
+            "If the question asks for general knowledge, prevention, symptoms, "
+            "or best practices about dengue, chikungunya, or zika and does NOT "
+            "require querying the database, respond ONLY with the exact token: GENERAL_KNOWLEDGE\n\n"
             "Otherwise, respond ONLY with a valid Presto/Athena SQL SELECT "
             "statement — no markdown, no explanation, no code fences. "
             "Just the raw SQL ending with a semicolon."
@@ -305,6 +308,10 @@ class BedrockService:
         # Out-of-scope guard
         if "OUT_OF_SCOPE" in raw:
             return None
+
+        # General knowledge guard
+        if "GENERAL_KNOWLEDGE" in raw:
+            return "GENERAL_KNOWLEDGE"
 
         # Extract SQL — strip markdown fences if the model disobeyed
         sql = self._extract_sql(raw)
@@ -335,21 +342,31 @@ class BedrockService:
         Returns:
             Rich narrative analysis in Brazilian Portuguese.
         """
-        prompt = (
-            f"The user asked (in Portuguese): \"{question}\"\n\n"
-            f"The following SQL was executed against the Gold layer:\n```sql\n{sql}\n```\n\n"
-            f"Query returned {row_count} row(s). Here are the results:\n\n"
-            f"{query_result}\n\n"
-            "Write a complete analysis in Brazilian Portuguese for a public health "
-            "professional. Include:\n"
-            "- A clear, direct answer to the user's question\n"
-            "- Relevant epidemiological insights (Rt, alert level, incidence trends)\n"
-            "- Risk Score assessment when applicable (Rt > 1.2 + high relative incidence)\n"
-            "- Actionable recommendations or alerts for at-risk municipalities\n"
-            "- If no data was returned, explain possible reasons and suggest rephrasing\n\n"
-            "Use **bold** for key numbers and municipality names. Use bullet points "
-            "and markdown tables when they improve readability. Be concise but thorough."
-        )
+        if sql == "GENERAL_KNOWLEDGE":
+            prompt = (
+                f"The user asked (in Portuguese): \"{question}\"\n\n"
+                "This is a general knowledge question about dengue, chikungunya, or zika. "
+                "You are an expert epidemiological analyst. Write a complete, clear, and direct "
+                "answer in Brazilian Portuguese for the user. Include best practices, symptoms, "
+                "or prevention methods as appropriate.\n\n"
+                "Use **bold** for key terms and bullet points to improve readability."
+            )
+        else:
+            prompt = (
+                f"The user asked (in Portuguese): \"{question}\"\n\n"
+                f"The following SQL was executed against the Gold layer:\n```sql\n{sql}\n```\n\n"
+                f"Query returned {row_count} row(s). Here are the results:\n\n"
+                f"{query_result}\n\n"
+                "Write a complete analysis in Brazilian Portuguese for a public health "
+                "professional. Include:\n"
+                "- A clear, direct answer to the user's question\n"
+                "- Relevant epidemiological insights (Rt, alert level, incidence trends)\n"
+                "- Risk Score assessment when applicable (Rt > 1.2 + high relative incidence)\n"
+                "- Actionable recommendations or alerts for at-risk municipalities\n"
+                "- If no data was returned, explain possible reasons and suggest rephrasing\n\n"
+                "Use **bold** for key numbers and municipality names. Use bullet points "
+                "and markdown tables when they improve readability. Be concise but thorough."
+            )
 
         return self._invoke(prompt, temperature=0.3)
 

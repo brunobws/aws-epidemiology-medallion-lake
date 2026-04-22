@@ -170,30 +170,36 @@ def process_question(question: str, bedrock: BedrockService, athena) -> None:
                 status.update(label="✅ Fora do escopo — respondido", state="complete")
                 return
 
-            # Show generated SQL inside the status container (informational)
-            st.markdown("**🔍 SQL gerado**")
-            st.code(sql, language="sql")
+            if sql == "GENERAL_KNOWLEDGE":
+                status.update(label="🧠 Gerando resposta (sem consulta a dados)...")
+                df = pd.DataFrame()
+                md_result = "_Pergunta de conhecimento geral._"
+                row_count = 0
+            else:
+                # Show generated SQL inside the status container (informational)
+                st.markdown("**🔍 SQL gerado**")
+                st.code(sql, language="sql")
 
-            # ── Step 2: Execute on Athena ──────────────────────────
-            status.update(label="⚡ Executando consulta no Athena...")
-            try:
-                df = athena.query_gold(sql)
-            except Exception as exc:
-                tb = traceback.format_exc()
-                logger.error(f"Athena query failed:\n{tb}")
-                error_msg = (
-                    f"⚠️ **Erro ao executar a consulta no Athena:**\n\n"
-                    f"```\n{exc}\n```\n\n"
-                    "Tente reformular sua pergunta ou verifique os logs."
-                )
-                st.error(error_msg)
-                _add_message("assistant", error_msg)
-                status.update(label="❌ Erro no Athena", state="error")
-                return
+                # ── Step 2: Execute on Athena ──────────────────────────
+                status.update(label="⚡ Executando consulta no Athena...")
+                try:
+                    df = athena.query_gold(sql)
+                except Exception as exc:
+                    tb = traceback.format_exc()
+                    logger.error(f"Athena query failed:\n{tb}")
+                    error_msg = (
+                        f"⚠️ **Erro ao executar a consulta no Athena:**\n\n"
+                        f"```\n{exc}\n```\n\n"
+                        "Tente reformular sua pergunta ou verifique os logs."
+                    )
+                    st.error(error_msg)
+                    _add_message("assistant", error_msg)
+                    status.update(label="❌ Erro no Athena", state="error")
+                    return
 
-            # ── Step 3: Generate analysis ──────────────────────────
-            status.update(label="📊 Gerando análise epidemiológica...")
-            md_result, row_count = _df_to_markdown(df)
+                # ── Step 3: Generate analysis ──────────────────────────
+                status.update(label="📊 Gerando análise epidemiológica...")
+                md_result, row_count = _df_to_markdown(df)
 
             try:
                 analysis = bedrock.generate_analysis(
