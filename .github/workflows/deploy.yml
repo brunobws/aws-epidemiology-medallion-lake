@@ -18,11 +18,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Acessa a pasta do projeto (Ajuste o caminho se for diferente)
+            # Acessa a pasta do projeto
             cd /home/ubuntu/aws-epidemiology-medallion-lake
             
             # Baixa as ultimas atualizacoes do GitHub
+            # Como usamos volumes no docker-compose, os arquivos em streamlit_app
+            # atualizam em tempo real dentro do container! Nao precisa de rebuild.
             git pull origin master
-            
-            # Roda o comando do Makefile para rebuildar o Docker e subir o site
-            make ec2-deploy
