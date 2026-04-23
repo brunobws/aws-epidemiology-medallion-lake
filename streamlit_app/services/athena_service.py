@@ -227,6 +227,19 @@ class AthenaService:
             logger.error(f"Error fetching results: {str(e)}")
             raise
 
+    import streamlit as st
+
+    @st.cache_data(ttl="1d", show_spinner=False)
+    def _execute_query_cached(_self, query: str, database: str) -> pd.DataFrame:
+        """Cached execution logic to prevent F5 spamming."""
+        try:
+            execution_id = _self._submit_query(query, database)
+            _self._wait_for_query_completion(execution_id)
+            return _self._fetch_results(execution_id)
+        except Exception as e:
+            logger.error(f"Cached query execution failed: {str(e)}")
+            raise
+
     def execute_query(self, query: str, database: Optional[str] = None) -> pd.DataFrame:
         """
         Execute a query and return results as DataFrame.
@@ -252,16 +265,7 @@ class AthenaService:
         database = database or self.database
         
         try:
-            # Step 1: Submit query
-            execution_id = self._submit_query(query, database)
-            
-            # Step 2: Wait for completion (THIS WAS THE BUG FIX)
-            self._wait_for_query_completion(execution_id)
-            
-            # Step 3: Fetch results
-            df = self._fetch_results(execution_id)
-            
-            return df
+            return self._execute_query_cached(query, database)
 
         except Exception as e:
             logger.error(f"Query execution failed: {str(e)}")

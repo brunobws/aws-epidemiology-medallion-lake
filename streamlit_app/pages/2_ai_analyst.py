@@ -412,8 +412,7 @@ with col_chat:
         st.error(
             "🔒 **Limite de Uso Atingido**\n\n"
             "Para proteger a infraestrutura e evitar custos abusivos, o uso público da IA "
-            "está limitado a **5 perguntas por sessão**.\n\n"
-            "💡 _Dica: Se precisar de mais testes, você pode simplesmente recarregar a página (F5)._"
+            "está limitado a **5 perguntas por sessão**."
         )
 
     user_input = st.chat_input(

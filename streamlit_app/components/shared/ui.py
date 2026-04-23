@@ -56,7 +56,10 @@ def render_header():
 def render_sidebar():
     """Sidebar with global disease filter and controls."""
     from config import DISEASES, DISEASES_PT
-    from datetime import datetime
+    from datetime import datetime, timedelta
+
+    # Gambiarra segura para fuso BRT (UTC-3) sem precisar do pytz
+    brt_time = datetime.utcnow() - timedelta(hours=3)
 
     with st.sidebar:
         st.markdown("### 🦟 Filtro Global")
@@ -79,7 +82,7 @@ def render_sidebar():
         st.divider()
 
         # Last update timestamp
-        st.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        st.caption(f"Última atualização: {brt_time.strftime('%d/%m/%Y %H:%M')}")
 
         st.caption(
             "Vigilância epidemiológica para arboviroses "
@@ -185,11 +188,11 @@ def render_floating_ia_button():
             var root = doc.createElement('div');
             root.id = '_arbo_fab_root';
             root.innerHTML =
-                '<button class="_arbo_fab">🤖</button>' +
+                '<button class="_arbo_fab">✨</button>' +
                 '<div class="_arbo_tip">Analista IA</div>' +
                 '<div id="_arbo_ov" class="_arbo_ov">' +
                 '  <div class="_arbo_card">' +
-                '    <div class="_arbo_ico">🤖</div>' +
+                '    <div class="_arbo_ico">✨</div>' +
                 '    <h3>Analista IA</h3>' +
                 '    <p>Faca perguntas em linguagem natural sobre os dados' +
                 '       epidemiologicos. A IA responde usando o Data Lake em tempo real.</p>' +
