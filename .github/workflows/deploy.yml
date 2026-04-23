@@ -1,0 +1,28 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Acessa a pasta do projeto (Ajuste o caminho se for diferente)
+            cd /home/ubuntu/aws-epidemiology-medallion-lake
+            
+            # Baixa as ultimas atualizacoes do GitHub
+            git pull origin master
+            
+            # Roda o comando do Makefile para rebuildar o Docker e subir o site
+            make ec2-deploy

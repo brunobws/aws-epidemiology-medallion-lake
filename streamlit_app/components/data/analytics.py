@@ -1,4 +1,4 @@
-﻿####################################################################
+####################################################################
 # Author: Bruno William da Silva
 # Date: 03/03/2026
 #
@@ -173,9 +173,9 @@ def fetch_kpi_trends(_athena_service: AthenaService, disease: str) -> pd.DataFra
 def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     """Main render function for epidemiological analytics."""
 
-    # â”€â”€ No sidebar filters â€” use global disease â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── No sidebar filters — use global disease ──────────────────
 
-    # â”€â”€ Load data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Load data ────────────────────────────────────────────
     with st.spinner("Carregando dados de alertas..."):
         current_alerts = fetch_current_alerts(athena_service, disease)
         comparative = fetch_comparative_alerts(athena_service)
@@ -190,13 +190,13 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     <h2 style="text-align: center; font-size: 1.2rem; color: #333; font-weight: 300;">
     {DISEASES_PT[disease]}
     </h2>
-    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: -10px;"><b>Qual Ã© a situaÃ§Ã£o atual da doenÃ§a em SÃ£o Paulo?</b></p>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: -10px;"><b>Qual é a situação atual da doença em São Paulo?</b></p>
     """, unsafe_allow_html=True)
     st.divider()
     st.write("")  # Spacing
 
-    # â”€â”€ Section 1: KPI cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    title_with_help("Indicadores Principais", "MÃ©tricas-chave sobre a circulaÃ§Ã£o da doenÃ§a na regiÃ£o")
+    # ── Section 1: KPI cards ────────────────────────────────
+    title_with_help("Indicadores Principais", "Métricas-chave sobre a circulação da doença na região")
     
     alert_colors_by_level = {1: ALERT_VERDE, 2: ALERT_AMARELO, 3: ALERT_LARANJA, 4: ALERT_VERMELHO}
 
@@ -206,9 +206,9 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     municipalities_in_epidemic = int(current_alerts[current_alerts["fl_epidemia"] == 1].shape[0])
     alert_distribution = current_alerts["nr_nivel_alerta"].value_counts().to_dict()
     pct_green = (alert_distribution.get(1, 0) / total_municipalities * 100) if total_municipalities > 0 else 0
-    status_text = "Controlado" if pct_green > 90 else "AtenÃ§Ã£o"
+    status_text = "Controlado" if pct_green > 90 else "Atenção"
 
-    # â”€â”€ Trend series (oldest â†’ newest for sparklines) â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Trend series (oldest → newest for sparklines) ────────
     if not kpi_trends.empty:
         trends_sorted = kpi_trends.sort_values("dt_semana_epidemiologica")
         cases_trend = trends_sorted["total_cases"].tolist()
@@ -226,23 +226,23 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
             "Total de Casos", 
             cases_trend, 
             color=ALERT_VERMELHO,
-            description="NÃºmero total de casos confirmados da doenÃ§a na semana atual."
+            description="Número total de casos confirmados da doença na semana atual."
         ), unsafe_allow_html=True)
 
     with col2:
         st.markdown(kpi_card_html(
             str(total_municipalities), 
-            "MunicÃ­pios Monitorados",
-            description="Quantidade de municÃ­pios que estÃ£o sendo monitorados para esta doenÃ§a."
+            "Municípios Monitorados",
+            description="Quantidade de municípios que estão sendo monitorados para esta doença."
         ), unsafe_allow_html=True)
 
     with col3:
         st.markdown(kpi_card_with_sparkline(
             str(avg_rt), 
-            "Rt MÃ©dio", 
+            "Rt Médio", 
             rt_trend, 
             color=ALERT_LARANJA,
-            description="NÃºmero de reproduÃ§Ã£o (Rt): Rt < 1 indica declÃ­nio, Rt > 1 indica crescimento. Limiar epidÃªmico: Rt = 1."
+            description="Número de reprodução (Rt): Rt < 1 indica declínio, Rt > 1 indica crescimento. Limiar epidêmico: Rt = 1."
         ), unsafe_allow_html=True)
 
     with col4:
@@ -251,33 +251,33 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
             "Epidemia Ativa", 
             epidemic_trend, 
             color=ALERT_VERMELHO,
-            description="NÃºmero de municÃ­pios com classificaÃ§Ã£o de epidemia ativa segundo critÃ©rios do MinistÃ©rio da SaÃºde."
+            description="Número de municípios com classificação de epidemia ativa segundo critérios do Ministério da Saúde."
         ), unsafe_allow_html=True)
 
     with col5:
         st.markdown(kpi_card_with_sparkline(
             f"{pct_green:.0f}%", 
-            f"Verde â€” {status_text}", 
+            f"Verde — {status_text}", 
             pct_green_trend, 
             color=COLOR_SUCCESS,
-            description="Percentual de municÃ­pios com alerta controlado (nÃ­vel verde)."
+            description="Percentual de municípios com alerta controlado (nível verde)."
         ), unsafe_allow_html=True)
 
     st.divider()
     st.write("")  # Spacing
 
-    # â”€â”€ Section 2: Comparative disease analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    title_with_help("Comparativo entre DoenÃ§as", "DistribuiÃ§Ã£o de alertas por doenÃ§a e municÃ­pios com circulaÃ§Ã£o ativa")
+    # ── Section 2: Comparative disease analysis ──────────────
+    title_with_help("Comparativo entre Doenças", "Distribuição de alertas por doença e municípios com circulação ativa")
 
     if not comparative.empty:
         col_comp_left, col_comp_right = st.columns(2, gap="medium")
 
         with col_comp_left:
-            st.markdown("#### DistribuiÃ§Ã£o por NÃ­vel de Alerta")
+            st.markdown("#### Distribuição por Nível de Alerta")
             
-            # Calcular o total mÃ¡ximo de municÃ­pios para redimensionar eixo Y
+            # Calcular o total máximo de municípios para redimensionar eixo Y
             total_mun_max = comparative.groupby("ds_doenca")["count_municipalities"].sum().max()
-            y_max = total_mun_max * 1.05  # 5% acima do mÃ¡ximo
+            y_max = total_mun_max * 1.05  # 5% acima do máximo
             
             fig_comp = go.Figure()
             for alert_level in [1, 2, 3, 4]:
@@ -296,8 +296,8 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
             fig_comp.update_layout(
                 barmode="stack",
                 height=CHART_HEIGHT,
-                xaxis_title="DoenÃ§a",
-                yaxis_title="MunicÃ­pios",
+                xaxis_title="Doença",
+                yaxis_title="Municípios",
                 yaxis=dict(range=[0, y_max]),
                 hovermode="x unified",
             )
@@ -305,13 +305,13 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
             st.plotly_chart(fig_comp, width="stretch")
 
         with col_comp_right:
-            st.markdown("#### MunicÃ­pios com Alerta Ativo")
+            st.markdown("#### Municípios com Alerta Ativo")
             
-            # Contar municÃ­pios nÃ£o-verdes por doenÃ§a
+            # Contar municípios não-verdes por doença
             non_green = comparative[comparative["nr_nivel_alerta"] != 1].groupby("ds_doenca")["count_municipalities"].sum()
             
             if non_green.empty or non_green.sum() == 0:
-                st.success("âœ“ Todos os municÃ­pios estÃ£o controlados (nÃ­vel verde)!")
+                st.success("✓ Todos os municípios estão controlados (nível verde)!")
             else:
                 fig_active = go.Figure(data=[go.Pie(
                     labels=non_green.index,
@@ -331,13 +331,13 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     st.divider()
     st.write("")  # Spacing
 
-    # â”€â”€ Section 3: Alert distribution + Mesoregion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    title_with_help("AnÃ¡lise Regional e de Alertas", "SituaÃ§Ã£o de alertas e distribuiÃ§Ã£o geogrÃ¡fica dos casos por mesorregiÃ£o")
+    # ── Section 3: Alert distribution + Mesoregion ───────────
+    title_with_help("Análise Regional e de Alertas", "Situação de alertas e distribuição geográfica dos casos por mesorregião")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### DistribuiÃ§Ã£o de Alertas Atuais")
+        st.markdown("#### Distribuição de Alertas Atuais")
         alert_counts = current_alerts["nr_nivel_alerta"].value_counts().sort_index()
         alert_labels = [ALERT_LEVELS.get(int(level), str(level)) for level in alert_counts.index]
         alert_colors = [alert_colors_by_level.get(int(level), "#999") for level in alert_counts.index]
@@ -352,9 +352,9 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
         fig_alerts = apply_professional_theme(fig_alerts)
         st.plotly_chart(fig_alerts, width="stretch")
 
-    # â”€â”€ Section 4: Mesoregion â€” colored by alert level â”€â”€â”€â”€â”€â”€â”€
+    # ── Section 4: Mesoregion — colored by alert level ───────
     with col2:
-        st.markdown("#### SituaÃ§Ã£o por MesorregiÃ£o (Top 10 por Casos)")
+        st.markdown("#### Situação por Mesorregião (Top 10 por Casos)")
         if not mesoregion_summary.empty:
             top_meso = mesoregion_summary.nlargest(10, "total_cases").copy()
             top_meso["nivel_label"] = top_meso["max_alert_level"].map(
@@ -384,8 +384,8 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
 
     st.markdown("---")
 
-    # â”€â”€ Section 5: Mesoregion summary table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    st.markdown("#### Resumo por MesorregiÃ£o")
+    # ── Section 5: Mesoregion summary table ──────────────────
+    st.markdown("#### Resumo por Mesorregião")
     if not mesoregion_summary.empty:
         display_cols = [
             "nm_mesorregiao", "total_cases", "avg_rt", "max_alert_level",
@@ -408,20 +408,19 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
 
     st.markdown("---")
 
-    # â”€â”€ Section 6: Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Section 6: Export ────────────────────────────────────
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            label="📥 Exportar Alertas Atuais (CSV)",
+            label="�📥 Exportar Alertas Atuais (CSV)",
             data=current_alerts.to_csv(index=False),
             file_name=f"alertas_{disease}.csv",
             mime="text/csv",
         )
     with col2:
         st.download_button(
-            label="ðŸ“¥ Exportar MesorregiÃµes (CSV)",
+            label="📥📥 Exportar Mesorregiões (CSV)",
             data=mesoregion_summary.to_csv(index=False),
             file_name=f"mesoregiao_{disease}.csv",
             mime="text/csv",
         )
-
