@@ -63,7 +63,7 @@ credentials
 # Data files
 *.csv
 *.parquet
-data/
+/data/
 *.xlsx
 *.xls
 
