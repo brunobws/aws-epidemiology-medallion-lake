@@ -181,12 +181,23 @@ def render_floating_ia_button():
                 '._arbo_no{flex:1;padding:10px;border:1.5px solid #ddd;border-radius:8px;background:#fff;color:#555;font-size:14px;font-weight:500;cursor:pointer;outline:none}',
                 '._arbo_no:hover{background:#f5f5f5}',
                 '._arbo_go{flex:1.4;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:14px;font-weight:600;cursor:pointer;outline:none}',
-                '._arbo_go:hover{opacity:.88}'
+                '._arbo_go:hover{opacity:.88}',
+                '@media(max-width: 768px){',
+                '  ._arbo_fab{width:44px;height:44px;font-size:18px}',
+                '  #_arbo_fab_root{bottom:16px !important;right:16px !important}',
+                '  ._arbo_card{width:300px;padding:24px 20px 20px}',
+                '}'
             ].join('');
             doc.head.appendChild(style);
 
             var root = doc.createElement('div');
             root.id = '_arbo_fab_root';
+            
+            // Oculta no celular se estiver na página da IA
+            if (window.top.location.pathname.includes('/ia') && window.innerWidth <= 768) {
+                root.style.display = 'none';
+            }
+            
             root.innerHTML =
                 '<button class="_arbo_fab">✨</button>' +
                 '<div class="_arbo_tip">Analista IA</div>' +

@@ -339,6 +339,12 @@ st.markdown("""
     color: rgba(255,255,255,0.75);
     font-weight: 500;
 }
+@media (max-width: 768px) {
+    .ia-hero { padding: 24px 20px; }
+    .ia-title { font-size: 24px; }
+    .ia-subtitle { font-size: 14px; }
+    .ia-hero::before { width: 150px; height: 150px; top: -30px; right: -30px; }
+}
 </style>
 
 <div class="ia-hero">
