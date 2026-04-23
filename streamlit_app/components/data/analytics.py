@@ -419,7 +419,7 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
         )
     with col2:
         st.download_button(
-            label="📥📥 Exportar Mesorregiões (CSV)",
+            label="📥 Exportar Mesorregiões (CSV)",
             data=mesoregion_summary.to_csv(index=False),
             file_name=f"mesoregiao_{disease}.csv",
             mime="text/csv",
