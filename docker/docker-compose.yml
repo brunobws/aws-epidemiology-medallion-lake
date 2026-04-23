@@ -1,14 +1,53 @@
+version: '3.8'
+
 services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/nginx/certs
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    restart: always
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    environment:
+      - DEFAULT_EMAIL=brun0ws@outlook.com
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - nginx-proxy
+    restart: always
 
   streamlit:
-    build: ../streamlit_app
+    build:
+      context: ..
+      dockerfile: Dockerfile
     container_name: arbovigilancia_dashboard
-    command: streamlit run main.py --server.headless true --server.port 8501
-    ports:
-      - "8501:8501"
+    command: streamlit run streamlit_app/main.py --server.headless true --server.port 8501
     volumes:
-      - ../streamlit_app:/app
+      - ../streamlit_app:/app/streamlit_app
       - ~/.aws:/root/.aws:ro
     environment:
       - AWS_DEFAULT_REGION=sa-east-1
+      - VIRTUAL_HOST=epimind.com.br,www.epimind.com.br
+      - LETSENCRYPT_HOST=epimind.com.br,www.epimind.com.br
+      - LETSENCRYPT_EMAIL=brun0ws@outlook.com
+      - VIRTUAL_PORT=8501
     restart: always
+
+volumes:
+  certs:
+  vhost:
+  html:
+  acme:

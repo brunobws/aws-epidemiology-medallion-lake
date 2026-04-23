@@ -41,4 +41,4 @@ def set_page_favicon(emoji: str) -> None:
     </script>
     """
     
-    components.html(html_code, height=0)
+    st.html(html_code)

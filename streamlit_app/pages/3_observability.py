@@ -13,10 +13,10 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.favicon import set_page_favicon
+from components.shared.favicon import set_page_favicon
 set_page_favicon("🔍")
 
-from utils.shared_ui import render_header, render_sidebar, render_footer, require_athena, render_floating_ia_button
+from components.shared.ui import render_header, render_sidebar, render_footer, require_athena, render_floating_ia_button
 
 render_header()
 render_sidebar()
@@ -30,11 +30,11 @@ tab1, tab2 = st.tabs([
 ])
 
 with tab1:
-    from logs_observability import render_logs_observability
+    from components.observability.logs import render_logs_observability
     render_logs_observability(athena_service)
 
 with tab2:
-    from data_quality import render_data_quality
+    from components.observability.data_quality import render_data_quality
     render_data_quality(athena_service)
 
 render_footer()

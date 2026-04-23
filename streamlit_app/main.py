@@ -31,8 +31,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 pg = st.navigation([
-    st.Page("pages/dados.py", title="Vigilância", icon="📊", url_path="vigilancia"),
-    st.Page("pages/observabilidade.py", title="Observabilidade", icon="🔍", url_path="observabilidade"),
-    st.Page("pages/ia_analista.py", title="IA Analista", icon="🤖", url_path="ia"),
+    st.Page("pages/1_data.py", title="Vigilância", icon="📊", url_path="vigilancia"),
+    st.Page("pages/3_observability.py", title="Observabilidade", icon="🔍", url_path="observabilidade"),
+    st.Page("pages/2_ai_analyst.py", title="IA Analista", icon="🤖", url_path="ia"),
 ])
 pg.run()

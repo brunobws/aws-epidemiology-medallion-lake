@@ -28,12 +28,12 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.favicon import set_page_favicon
+from components.shared.favicon import set_page_favicon
 set_page_favicon("🤖")
 
 from theme import COLOR_DARK_GRAY, COLOR_LIGHT_GRAY, COLOR_BORDER, COLOR_ORANGE
-from utils.shared_ui import render_header, render_footer, get_athena_service
-from utils.bedrock_service import BedrockService
+from components.shared.ui import render_header, render_footer, get_athena_service
+from services.bedrock_service import BedrockService
 from utils.logger import get_logger
 ###################################
 
@@ -99,6 +99,8 @@ def _init_history() -> None:
     """Ensure chat history exists in session state."""
     if HISTORY_KEY not in st.session_state:
         st.session_state[HISTORY_KEY] = []
+    if "query_count" not in st.session_state:
+        st.session_state["query_count"] = 0
 
 
 def _add_message(role: str, content: str) -> None:
@@ -243,9 +245,10 @@ def process_question(question: str, bedrock: BedrockService, athena) -> None:
         # Optionally show raw DataFrame
         if not df.empty:
             with st.expander(f"📋 Dados brutos ({row_count} linhas)", expanded=False):
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df, width="stretch")
 
         _add_message("assistant", analysis)
+        st.session_state["query_count"] += 1
         logger.info(f"Pipeline complete: question='{question[:80]}', rows={row_count}")
 
 
@@ -403,9 +406,19 @@ with col_chat:
     athena_service  = get_athena_service()
 
     # ── Chat input ────────────────────────────────────────────────
+    limit_reached = st.session_state.get("query_count", 0) >= 5
+    
+    if limit_reached:
+        st.error(
+            "🔒 **Limite de Uso Atingido**\n\n"
+            "Para proteger a infraestrutura e evitar custos abusivos, o uso público da IA "
+            "está limitado a **5 perguntas por sessão**.\n\n"
+            "💡 _Dica: Se precisar de mais testes, você pode simplesmente recarregar a página (F5)._"
+        )
+
     user_input = st.chat_input(
         "Pergunte sobre os dados epidemiológicos de SP...",
-        disabled=(bedrock_service is None or athena_service is None),
+        disabled=(bedrock_service is None or athena_service is None or limit_reached),
         key="epimind_chat_input",
     )
 
@@ -432,7 +445,7 @@ with col_chat:
 
     # ── Clear history button ──────────────────────────────────────
     if st.session_state.get(HISTORY_KEY):
-        if st.button("🗑️ Limpar conversa", key="clear_chat", use_container_width=False):
+        if st.button("🗑️ Limpar conversa", key="clear_chat", width="content"):
             st.session_state[HISTORY_KEY] = []
             st.rerun()
 

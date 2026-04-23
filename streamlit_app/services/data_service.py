@@ -10,7 +10,7 @@
 
 ########### imports ################
 from utils.cache_manager import cached_query
-from utils.athena_service import AthenaService
+from services.athena_service import AthenaService
 from config import CACHE_TTL
 ###################################
 

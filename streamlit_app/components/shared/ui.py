@@ -11,7 +11,7 @@
 ########### imports ################
 import streamlit as st
 import streamlit.components.v1 as components
-from utils.athena_service import AthenaService
+from services.athena_service import AthenaService
 from utils.cache_manager import clear_all_caches
 from utils.logger import get_logger
 from theme import COLOR_DARK_GRAY, COLOR_LIGHT_GRAY, COLOR_ORANGE, COLOR_BORDER
@@ -72,7 +72,7 @@ def render_sidebar():
         st.divider()
 
         # Update button
-        if st.button("Atualizar Dados", use_container_width=True):
+        if st.button("Atualizar Dados", width="stretch"):
             clear_all_caches()
             st.rerun()
 
@@ -129,7 +129,7 @@ def render_floating_ia_button():
     Uses components.html + window.top to escape any intermediate Streamlit
     iframes, injecting CSS and HTML directly into the top-level page document.
     """
-    components.html("""
+    st.html("""
     <script>
     function arboInject() {
         try {
@@ -234,4 +234,4 @@ def render_floating_ia_button():
     }
     arboInject();
     </script>
-    """, height=1, scrolling=False)
+    """)

@@ -247,5 +247,5 @@ def title_with_help(title: str, help_text: str, level: int = 2) -> None:
     
     with col_help:
         st.button("?", key=f"help_{title.replace(' ', '_')}", help=help_text, 
-                 use_container_width=True)
+                 width="stretch")
 

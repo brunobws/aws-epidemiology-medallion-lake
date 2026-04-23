@@ -13,10 +13,10 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.favicon import set_page_favicon
+from components.shared.favicon import set_page_favicon
 set_page_favicon("📊")
 
-from utils.shared_ui import render_header, render_sidebar, render_footer, require_athena, render_floating_ia_button
+from components.shared.ui import render_header, render_sidebar, render_footer, require_athena, render_floating_ia_button
 
 render_header()
 selected_disease = render_sidebar()
@@ -32,19 +32,19 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 with tab1:
-    from epidemio_analytics import render_epidemio_analytics
+    from components.data.analytics import render_epidemio_analytics
     render_epidemio_analytics(athena_service, selected_disease)
 
 with tab2:
-    from epidemic_timeseries import render_epidemic_timeseries
+    from components.data.timeseries import render_epidemic_timeseries
     render_epidemic_timeseries(athena_service, selected_disease)
 
 with tab3:
-    from epidemic_ranking import render_epidemic_ranking
+    from components.data.ranking import render_epidemic_ranking
     render_epidemic_ranking(athena_service, selected_disease)
 
 with tab4:
-    from epidemic_demographic import render_epidemic_demographic
+    from components.data.demographic import render_epidemic_demographic
     render_epidemic_demographic(athena_service, selected_disease)
 
 render_footer()

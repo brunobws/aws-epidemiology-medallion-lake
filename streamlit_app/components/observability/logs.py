@@ -21,9 +21,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from utils.logger import get_logger
-from utils.athena_service import AthenaService
-from utils.analytics_service import AnalyticsService
-from utils.parser_service import ParserService
+from services.athena_service import AthenaService
+from services.analytics_service import AnalyticsService
+from services.parser_service import ParserService
 from utils.cache_manager import cached_query
 from config import (
     ATHENA_LOGS_DATABASE, LOGS_TABLE, CHART_HEIGHT,
@@ -308,7 +308,7 @@ def render_logs_observability(athena_service: AthenaService):
 
     st.dataframe(
         display_df.sort_values("Start Time", ascending=False),
-        use_container_width=True,
+        width="stretch",
         height=400,
     )
 

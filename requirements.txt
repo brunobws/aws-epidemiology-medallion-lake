@@ -12,6 +12,7 @@ plotly>=5.0.0
 
 # Database and connectivity
 pyarrow>=12.0.0
+pyathena>=3.12.2
 
 # HTTP requests
 requests>=2.31.0
@@ -20,6 +21,8 @@ urllib3>=2.0.0
 # Utilities
 python-dotenv>=1.0.0
 pydantic>=2.0.0
+PyYAML>=6.0.1
+tabulate>=0.10.0
 
 # Logging and monitoring
 python-json-logger>=2.0.7

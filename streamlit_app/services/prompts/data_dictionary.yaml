@@ -1,0 +1,69 @@
+version: "1.0"
+tables:
+  tb_ft_alerta_semanal: |
+    --- TABLE 1: tb_ft_alerta_semanal ---
+    Granularity: municipality + disease + epidemiological week
+    Partitions : nr_ano_epi (int), ds_doenca (string), dt_semana_epidemiologica (date)
+    
+    Columns:
+      cd_geocode        int     -- IBGE geocode (7 digits)
+      nm_municipio      string  -- municipality name
+      nm_microrregiao   string  -- IBGE micro-region
+      nm_mesorregiao    string  -- IBGE meso-region
+      vl_populacao      int     -- population estimate
+      nr_semana_epi     int     -- epidemiological week number (1-53)
+      nr_nivel_alerta   int     -- alert level: 1=green, 2=yellow, 3=orange, 4=red
+      ds_nivel_alerta   string  -- alert label: verde, amarelo, laranja, vermelho
+      vl_casos          int     -- confirmed cases in the week
+      vl_casos_estimados double -- estimated cases (epidemiological model)
+      vl_incidencia     double  -- incidence per 100k inhabitants in the week
+      vl_rt             double  -- reproduction number (Rt); Rt > 1 = epidemic growth
+      fl_epidemia       int     -- epidemic flag: 1 when Rt > 1 AND transmission confirmed
+      fl_transmissao    int     -- confirmed active transmission (0/1)
+      fl_receptividade  int     -- climate receptivity (0/1)
+      vl_temp_min       double  -- min temperature (°C)
+      vl_temp_max       double  -- max temperature (°C)
+      vl_umid_min       double  -- min relative humidity (%)
+      vl_umid_max       double  -- max relative humidity (%)
+
+  tb_ft_perfil_demografico: |
+    --- TABLE 2: tb_ft_perfil_demografico ---
+    Granularity: municipality + disease + age group + sex + notification month
+    Partitions : nr_ano_notificacao (int), nr_mes_notificacao (int)
+    
+    Columns:
+      cd_geocode_ibge      int    -- IBGE code (6 digits, SINAN standard)
+      nm_municipio         string -- municipality name
+      nm_microrregiao      string -- IBGE micro-region
+      nm_mesorregiao       string -- IBGE meso-region
+      id_agravo            string -- CID-10: A90=dengue, A92=chikungunya, A92.8=zika
+      ds_doenca            string -- disease name: dengue, chikungunya, zika
+      ds_faixa_etaria      string -- age group: 0-4, 5-14, 15-29, 30-59, 60+
+      cs_sexo              string -- sex: M=male, F=female, I=unknown
+      nr_notificacoes      int    -- total notifications (includes under investigation)
+      nr_casos_confirmados int    -- confirmed cases (classi_fin = 10)
+      nr_obitos            int    -- deaths (evolucao=3) or under investigation (evolucao=9)
+      nr_curas             int    -- recovered cases (evolucao=1)
+
+  tb_ft_ranking_anual: |
+    --- TABLE 3: tb_ft_ranking_anual ---
+    Granularity: municipality + disease + year
+    Partitions : nr_ano_epi (int), ds_doenca (string)
+    
+    Columns:
+      cd_geocode                  int    -- IBGE geocode (7 digits)
+      nm_municipio                string -- municipality name
+      nm_microrregiao             string -- IBGE micro-region
+      nm_mesorregiao              string -- IBGE meso-region
+      vl_populacao                int    -- population estimate
+      vl_total_casos              int    -- total confirmed cases in the year
+      vl_incidencia_acumulada     double -- cumulative annual incidence per 100k
+      nr_max_alerta               int    -- max alert level reached (1-4)
+      nr_semanas_alerta_vermelho  int    -- weeks at red alert (level 4)
+      nr_semanas_alerta_alto      int    -- weeks at high/critical alert (level >= 3)
+      -- NOTE: ds_nivel_alerta does NOT exist in tb_ft_ranking_anual. Use nr_max_alerta (1-4) instead.
+      nr_semanas_transmissao_ativa int   -- weeks with confirmed active transmission
+      nr_semanas_rt_acima_1       int    -- weeks with Rt > 1 (epidemic growth)
+      vl_rt_medio                 double -- average Rt across the year
+      nr_rank_estado              int    -- state ranking by cumulative incidence (1 = worst)
+      nr_rank_mesorregiao         int    -- meso-region ranking by cumulative incidence
