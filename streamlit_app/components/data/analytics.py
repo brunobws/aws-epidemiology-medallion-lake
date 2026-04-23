@@ -412,7 +412,7 @@ def render_epidemio_analytics(athena_service: AthenaService, disease: str):
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            label="�📥 Exportar Alertas Atuais (CSV)",
+            label="📥 Exportar Alertas Atuais (CSV)",
             data=current_alerts.to_csv(index=False),
             file_name=f"alertas_{disease}.csv",
             mime="text/csv",
