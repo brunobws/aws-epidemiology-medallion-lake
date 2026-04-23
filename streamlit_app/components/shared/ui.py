@@ -199,11 +199,11 @@ def render_floating_ia_button():
             }
             
             root.innerHTML =
-                '<button class="_arbo_fab">✨</button>' +
+                '<button class="_arbo_fab">🧠</button>' +
                 '<div class="_arbo_tip">Analista IA</div>' +
                 '<div id="_arbo_ov" class="_arbo_ov">' +
                 '  <div class="_arbo_card">' +
-                '    <div class="_arbo_ico">✨</div>' +
+                '    <div class="_arbo_ico">🧠</div>' +
                 '    <h3>Analista IA</h3>' +
                 '    <p>Faca perguntas em linguagem natural sobre os dados' +
                 '       epidemiologicos. A IA responde usando o Data Lake em tempo real.</p>' +
