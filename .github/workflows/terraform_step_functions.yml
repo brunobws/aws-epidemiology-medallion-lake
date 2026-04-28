@@ -1,0 +1,51 @@
+name: Terraform Deploy (Step Functions)
+
+# Applies Terraform changes for the Step Functions pipeline and its IAM role.
+# Triggers when the Terraform config or the pipeline definition JSON changes.
+# State is stored remotely in S3 — no local tfstate file is needed.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'aws/terraform/step_functions/**'
+
+env:
+  AWS_REGION: sa-east-1
+
+jobs:
+  terraform-step-functions:
+    name: Terraform Plan & Apply (Step Functions)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.7"
+
+      - name: Terraform Init
+        working-directory: aws/terraform/step_functions
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: aws/terraform/step_functions
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: aws/terraform/step_functions
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: aws/terraform/step_functions
+        run: terraform apply -auto-approve tfplan

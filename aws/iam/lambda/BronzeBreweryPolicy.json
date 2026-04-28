@@ -1,0 +1,105 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowWriteBronze",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject"],
+      "Resource": "arn:aws:s3:::bws-dl-bronze-sae1-prd/*"
+    },
+    {
+      "Sid": "AllowListBronzeBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::bws-dl-bronze-sae1-prd"
+    },
+    {
+      "Sid": "AllowDeleteSilverGold",
+      "Effect": "Allow",
+      "Action": ["s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::bws-dl-silver-sae1-prd/*",
+        "arn:aws:s3:::bws-dl-gold-sae1-prd/*"
+      ]
+    },
+    {
+      "Sid": "AllowWriteLogsBucket",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject"],
+      "Resource": ["arn:aws:s3:::bws-dl-logs-sae1-prd/*"]
+    },
+    {
+      "Sid": "AllowListLogsBuckets",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": ["arn:aws:s3:::bws-dl-logs-sae1-prd"]
+    },
+    {
+      "Sid": "AllowAthenaExecution",
+      "Effect": "Allow",
+      "Action": [
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowGlueCatalogAccess",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetTable",
+        "glue:GetPartitions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowCloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowAthenaS3FullAccessLogsBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::bws-dl-logs-sae1-prd",
+        "arn:aws:s3:::bws-dl-logs-sae1-prd/*"
+      ]
+    },
+    {
+      "Sid": "SESSendEmail",
+      "Effect": "Allow",
+      "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+      "Resource": "arn:aws:ses:sa-east-1:580148408154:identity/*"
+    },
+    {
+      "Sid": "DynamoDBFullAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:PutItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:DeleteItem",
+        "dynamodb:GetItem",
+        "dynamodb:Scan",
+        "dynamodb:Query",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": "arn:aws:dynamodb:sa-east-1:580148408154:table/*"
+    }
+  ]
+}

@@ -83,3 +83,14 @@ temp/
 
 # SSH Keys
 *.pem
+
+# Terraform — nunca versionar estado local nem diretório de providers
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
+
+# Terraform item cache (generated JSON files for DynamoDB put-item)
+aws/terraform/**/.item_cache/
+aws/dynamo_params/.item_cache/

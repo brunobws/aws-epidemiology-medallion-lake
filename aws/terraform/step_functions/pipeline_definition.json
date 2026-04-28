@@ -1,0 +1,175 @@
+{
+  "Comment": "Pipeline semanal de ingestao: Bronze (Lambdas) -> Silver (Glue) -> Gold (Glue)",
+  "StartAt": "ProcessamentoParalelo",
+  "States": {
+    "ProcessamentoParalelo": {
+      "Type": "Parallel",
+      "Next": "GoldParalelo",
+      "Branches": [
+        {
+          "StartAt": "Lambda_InfoDengue",
+          "States": {
+            "Lambda_InfoDengue": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "BronzeApiCaptureInfoDengue",
+                "Payload.$": "$"
+              },
+              "Next": "Glue_InfoDengue"
+            },
+            "Glue_InfoDengue": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "bronze_to_silver",
+                "Arguments": {
+                  "--target_table": "infodengue_tb_alertas",
+                  "--dt_ref.$": "$.Payload.ingestion_date",
+                  "--file_name.$": "$.Payload.filename"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Lambda_IbgeMunicipios",
+          "States": {
+            "Lambda_IbgeMunicipios": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "BronzeApiCaptureIbgeMunicipios",
+                "Payload.$": "$"
+              },
+              "Next": "Glue_IbgeMunicipios"
+            },
+            "Glue_IbgeMunicipios": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "bronze_to_silver",
+                "Arguments": {
+                  "--target_table": "ibge_tb_municipios",
+                  "--dt_ref.$": "$.Payload.ingestion_date",
+                  "--file_name.$": "$.Payload.filename"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Lambda_SinanNotif",
+          "States": {
+            "Lambda_SinanNotif": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "BronzeS3CaptureSinanNotif",
+                "Payload.$": "$"
+              },
+              "Next": "Glue_SinanNotif"
+            },
+            "Glue_SinanNotif": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "bronze_to_silver",
+                "Arguments": {
+                  "--target_table": "sinan_tb_notificacoes",
+                  "--dt_ref.$": "$.Payload.ingestion_date",
+                  "--file_name.$": "$.Payload.filename"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Lambda_IbgePopulacao",
+          "States": {
+            "Lambda_IbgePopulacao": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "BronzeApiCaptureIbgePopulacao",
+                "Payload.$": "$"
+              },
+              "Next": "Glue_IbgePopulacao"
+            },
+            "Glue_IbgePopulacao": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "bronze_to_silver",
+                "Arguments": {
+                  "--target_table": "ibge_tb_populacao",
+                  "--dt_ref.$": "$.Payload.ingestion_date",
+                  "--file_name.$": "$.Payload.filename"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+
+    "GoldParalelo": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Glue_Gold_AlertaSemanal",
+          "States": {
+            "Glue_Gold_AlertaSemanal": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "silver_to_gold",
+                "Arguments": {
+                  "--target_table": "gold_tb_ft_alerta_semanal"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Glue_Gold_PerfilDemografico",
+          "States": {
+            "Glue_Gold_PerfilDemografico": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "silver_to_gold",
+                "Arguments": {
+                  "--target_table": "gold_tb_ft_perfil_demografico"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Glue_Gold_RankingAnual",
+          "States": {
+            "Glue_Gold_RankingAnual": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "silver_to_gold",
+                "Arguments": {
+                  "--target_table": "gold_tb_ft_ranking_anual"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

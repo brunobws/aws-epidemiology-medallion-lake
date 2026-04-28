@@ -1,0 +1,188 @@
+name: AWS Scripts Deploy (Lambda, Glue, Modules & SQL)
+
+# Deploys Lambda functions, Glue scripts, Python modules, and SQL files to AWS.
+# Each job runs independently — only the job whose path changed will execute.
+#
+# Trigger paths:
+#   aws/scripts/lambda_scripts/** → Job: deploy-lambda
+#   aws/scripts/glue_scripts/**   → Job: deploy-glue
+#   aws/modules/**                → Job: deploy-modules
+#   aws/sql/gold/**               → Job: deploy-sql-gold
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'aws/scripts/lambda_scripts/**'
+      - 'aws/scripts/glue_scripts/**'
+      - 'aws/modules/**'
+      - 'aws/sql/gold/**'
+
+env:
+  AWS_REGION: sa-east-1
+  ARTIFACT_BUCKET: bws-artifacts-sae1-prd
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Update Lambda function code
+  # Packages each .py file as a .zip and calls update-function-code.
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-lambda:
+    name: Update Lambda Functions
+    runs-on: ubuntu-latest
+    if: contains(toJson(github.event.commits), 'aws/scripts/lambda_scripts')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy BronzeApiCaptureInfoDengue
+        run: |
+          cd aws/scripts/lambda_scripts
+          zip BronzeApiCaptureInfoDengue.zip BronzeApiCaptureInfoDengue.py
+          aws lambda update-function-code \
+            --function-name BronzeApiCaptureInfoDengue \
+            --zip-file fileb://BronzeApiCaptureInfoDengue.zip
+          echo "✅ BronzeApiCaptureInfoDengue updated"
+
+      - name: Deploy BronzeApiCaptureIbgeMunicipios
+        run: |
+          cd aws/scripts/lambda_scripts
+          zip BronzeApiCaptureIbgeMunicipios.zip BronzeApiCaptureIbgeMunicipios.py
+          aws lambda update-function-code \
+            --function-name BronzeApiCaptureIbgeMunicipios \
+            --zip-file fileb://BronzeApiCaptureIbgeMunicipios.zip
+          echo "✅ BronzeApiCaptureIbgeMunicipios updated"
+
+      - name: Deploy BronzeApiCaptureIbgePopulacao
+        run: |
+          cd aws/scripts/lambda_scripts
+          zip BronzeApiCaptureIbgePopulacao.zip BronzeApiCaptureIbgePopulacao.py
+          aws lambda update-function-code \
+            --function-name BronzeApiCaptureIbgePopulacao \
+            --zip-file fileb://BronzeApiCaptureIbgePopulacao.zip
+          echo "✅ BronzeApiCaptureIbgePopulacao updated"
+
+      - name: Deploy BronzeS3CaptureSinan
+        run: |
+          cd aws/scripts/lambda_scripts
+          zip BronzeS3CaptureSinan.zip BronzeS3CaptureSinan.py
+          aws lambda update-function-code \
+            --function-name BronzeS3CaptureSinanNotif \
+            --zip-file fileb://BronzeS3CaptureSinan.zip
+          echo "✅ BronzeS3CaptureSinanNotif updated"
+
+      - name: Deploy CleanFolder
+        run: |
+          cd aws/scripts/lambda_scripts
+          zip CleanFolder.zip CleanFolder.py
+          aws lambda update-function-code \
+            --function-name CleanFolder \
+            --zip-file fileb://CleanFolder.zip
+          echo "✅ CleanFolder updated"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Sync Glue scripts to S3
+  # Glue Jobs read their script directly from S3 at runtime.
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-glue:
+    name: Update Glue Scripts on S3
+    runs-on: ubuntu-latest
+    if: contains(toJson(github.event.commits), 'aws/scripts/glue_scripts')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload Glue scripts to S3
+        run: |
+          aws s3 sync aws/scripts/glue_scripts/ \
+            s3://${{ env.ARTIFACT_BUCKET }}/scripts/ \
+            --include "*.py" \
+            --delete
+          echo "✅ Glue scripts synced to S3"
+
+      - name: Update script path for bronze_to_silver
+        run: |
+          aws glue update-job \
+            --job-name bronze_to_silver \
+            --job-update '{"Command":{"Name":"glueetl","ScriptLocation":"s3://${{ env.ARTIFACT_BUCKET }}/scripts/bronze_to_silver.py","PythonVersion":"3"}}'
+          echo "✅ bronze_to_silver updated"
+
+      - name: Update script path for silver_to_gold
+        run: |
+          aws glue update-job \
+            --job-name silver_to_gold \
+            --job-update '{"Command":{"Name":"glueetl","ScriptLocation":"s3://${{ env.ARTIFACT_BUCKET }}/scripts/silver_to_gold.py","PythonVersion":"3"}}'
+          echo "✅ silver_to_gold updated"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Sync Python modules to S3 (pgms/ prefix)
+  # Glue jobs import shared utilities from s3://bucket/pgms/
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-modules:
+    name: Sync Modules to S3 pgms/
+    runs-on: ubuntu-latest
+    if: contains(toJson(github.event.commits), 'aws/modules')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload modules to s3://bws-artifacts-sae1-prd/pgms/
+        run: |
+          aws s3 sync aws/modules/ \
+            s3://${{ env.ARTIFACT_BUCKET }}/pgms/ \
+            --exclude "__init__.py" \
+            --delete
+          echo "✅ Modules synced to S3"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 4 — Sync SQL Gold files to S3
+  # Files are replaced with the same name: tb_ft_ranking_anual.sql → s3://.../sql/gold/
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-sql-gold:
+    name: Sync SQL Gold to S3 sql/gold/
+    runs-on: ubuntu-latest
+    if: contains(toJson(github.event.commits), 'aws/sql/gold')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload SQL Gold to s3://bws-artifacts-sae1-prd/sql/gold/
+        run: |
+          aws s3 sync aws/sql/gold/ \
+            s3://${{ env.ARTIFACT_BUCKET }}/sql/gold/ \
+            --include "*.sql" \
+            --delete
+          echo "✅ SQL Gold synced:"
+          aws s3 ls s3://${{ env.ARTIFACT_BUCKET }}/sql/gold/

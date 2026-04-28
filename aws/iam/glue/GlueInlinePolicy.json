@@ -1,0 +1,106 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3BucketAccess",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": [
+        "arn:aws:s3:::bws-dl-logs-sae1-prd",
+        "arn:aws:s3:::bws-dl-bronze-sae1-prd",
+        "arn:aws:s3:::bws-dl-silver-sae1-prd",
+        "arn:aws:s3:::bws-dl-gold-sae1-prd",
+        "arn:aws:s3:::bws-artifacts-sae1-prd"
+      ]
+    },
+    {
+      "Sid": "S3ObjectAccess",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::bws-dl-logs-sae1-prd/*",
+        "arn:aws:s3:::bws-dl-bronze-sae1-prd/*",
+        "arn:aws:s3:::bws-dl-silver-sae1-prd/*",
+        "arn:aws:s3:::bws-dl-gold-sae1-prd/*",
+        "arn:aws:s3:::bws-artifacts-sae1-prd/*"
+      ]
+    },
+    {
+      "Sid": "DynamoDBAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem"
+      ],
+      "Resource": "arn:aws:dynamodb:sa-east-1:*:table/*"
+    },
+    {
+      "Sid": "GlueCatalogAccess",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetDatabases",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetPartition",
+        "glue:GetPartitions",
+        "glue:CreateTable",
+        "glue:UpdateTable",
+        "glue:DeleteTable",
+        "glue:CreatePartition",
+        "glue:BatchCreatePartition",
+        "glue:UpdatePartition"
+      ],
+      "Resource": [
+        "arn:aws:glue:sa-east-1:*:catalog",
+        "arn:aws:glue:sa-east-1:*:database/*",
+        "arn:aws:glue:sa-east-1:*:table/*"
+      ]
+    },
+    {
+      "Sid": "AthenaAccess",
+      "Effect": "Allow",
+      "Action": [
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults",
+        "athena:StopQueryExecution",
+        "athena:GetWorkGroup"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchLogsAccess",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "GlueRuntime",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetJob",
+        "glue:GetJobRun",
+        "glue:GetJobRuns",
+        "glue:BatchStopJobRun"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SESSendEmail",
+      "Effect": "Allow",
+      "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+      "Resource": "arn:aws:ses:sa-east-1:580148408154:identity/*"
+    }
+  ]
+}

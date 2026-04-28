@@ -1,0 +1,31 @@
+name: EC2 Streamlit Deploy
+
+# Triggers a "git pull" on the EC2 instance ONLY when files inside
+# streamlit_app/ change. Infrastructure or AWS script changes will NOT
+# trigger this workflow — they have their own dedicated workflows.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'streamlit_app/**'
+
+jobs:
+  deploy:
+    name: Pull latest changes on EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/aws-epidemiology-medallion-lake
+
+            # Pull the latest code from master.
+            # Because streamlit_app/ is mounted as a Docker volume,
+            # the container picks up changes immediately — no rebuild needed.
+            git pull origin master

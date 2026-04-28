@@ -1,0 +1,56 @@
+name: Terraform Deploy (DynamoDB)
+
+# Applies Terraform changes for DynamoDB tables and items.
+# Triggers when the Terraform config OR any parameter JSON file changes.
+# Items are upserted via "aws dynamodb put-item" using the local_file strategy
+# to avoid shell quoting issues with Python-style single quotes in table_schema.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'aws/terraform/dynamodb/**'
+      - 'aws/dynamo_params/**'
+
+env:
+  AWS_REGION: sa-east-1
+
+jobs:
+  terraform-dynamodb:
+    name: Terraform Plan & Apply (DynamoDB)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.7"
+
+      - name: Create item cache directory
+        run: mkdir -p aws/terraform/dynamodb/.item_cache
+
+      - name: Terraform Init
+        working-directory: aws/terraform/dynamodb
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: aws/terraform/dynamodb
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: aws/terraform/dynamodb
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: aws/terraform/dynamodb
+        run: terraform apply -auto-approve tfplan

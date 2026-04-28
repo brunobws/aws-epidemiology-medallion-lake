@@ -1,0 +1,90 @@
+name: AWS IAM Policies Deploy
+
+# Applies inline policy updates to the Lambda and Glue IAM roles.
+# The JSON files in aws/iam/ are the source of truth for all permissions.
+# Changing a JSON here automatically updates the role in AWS via put-role-policy (upsert).
+#
+# Roles managed:
+#   aws/iam/lambda/BronzeBreweryPolicy.json → bws-lambda-role
+#   aws/iam/glue/GlueInlinePolicy.json      → bws-glue-role
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'aws/iam/**'
+
+env:
+  AWS_REGION: sa-east-1
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Update Lambda role inline policy
+  # ─────────────────────────────────────────────────────────────────────────────
+  update-lambda-policy:
+    name: Update Lambda Inline Policy
+    runs-on: ubuntu-latest
+    if: contains(toJson(github.event.commits), 'aws/iam/lambda')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # put-role-policy is an upsert: creates or replaces the inline policy
+      - name: Apply BronzeBreweryPolicy to bws-lambda-role
+        run: |
+          aws iam put-role-policy \
+            --role-name bws-lambda-role \
+            --policy-name BronzeBreweryPolicy \
+            --policy-document file://aws/iam/lambda/BronzeBreweryPolicy.json
+          echo "✅ BronzeBreweryPolicy applied to bws-lambda-role"
+
+      - name: Verify applied policy
+        run: |
+          aws iam get-role-policy \
+            --role-name bws-lambda-role \
+            --policy-name BronzeBreweryPolicy \
+            --query PolicyDocument \
+            --output json
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Update Glue role inline policy
+  # ─────────────────────────────────────────────────────────────────────────────
+  update-glue-policy:
+    name: Update Glue Inline Policy
+    runs-on: ubuntu-latest
+    if: contains(toJson(github.event.commits), 'aws/iam/glue')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Apply GlueInlinePolicy to bws-glue-role
+        run: |
+          aws iam put-role-policy \
+            --role-name bws-glue-role \
+            --policy-name GlueInlinePolicy \
+            --policy-document file://aws/iam/glue/GlueInlinePolicy.json
+          echo "✅ GlueInlinePolicy applied to bws-glue-role"
+
+      - name: Verify applied policy
+        run: |
+          aws iam get-role-policy \
+            --role-name bws-glue-role \
+            --policy-name GlueInlinePolicy \
+            --query PolicyDocument \
+            --output json
