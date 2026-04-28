@@ -5,13 +5,7 @@
       "Sid": "LambdaUpdateCode",
       "Effect": "Allow",
       "Action": ["lambda:UpdateFunctionCode"],
-      "Resource": [
-        "arn:aws:lambda:sa-east-1:580148408154:function:BronzeApiCaptureInfoDengue",
-        "arn:aws:lambda:sa-east-1:580148408154:function:BronzeApiCaptureIbgeMunicipios",
-        "arn:aws:lambda:sa-east-1:580148408154:function:BronzeApiCaptureIbgePopulacao",
-        "arn:aws:lambda:sa-east-1:580148408154:function:BronzeS3CaptureSinanNotif",
-        "arn:aws:lambda:sa-east-1:580148408154:function:CleanFolder"
-      ]
+      "Resource": "arn:aws:lambda:sa-east-1:580148408154:function:*"
     },
     {
       "Sid": "GlueUpdateJob",
@@ -22,25 +16,17 @@
     {
       "Sid": "S3ArtifactsBucket",
       "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
       "Resource": [
         "arn:aws:s3:::bws-artifacts-sae1-prd",
         "arn:aws:s3:::bws-artifacts-sae1-prd/*"
       ]
     },
     {
-      "Sid": "StepFunctionsTerraform",
+      "Sid": "TerraformAndIAM",
       "Effect": "Allow",
       "Action": [
-        "states:CreateStateMachine",
-        "states:UpdateStateMachine",
-        "states:DescribeStateMachine",
-        "states:TagResource",
+        "states:*",
         "iam:GetRole",
         "iam:CreateRole",
         "iam:PutRolePolicy",
@@ -48,18 +34,10 @@
         "iam:DeleteRolePolicy",
         "iam:PassRole",
         "iam:ListAttachedRolePolicies",
-        "iam:ListRolePolicies"
+        "iam:ListRolePolicies",
+        "dynamodb:*"
       ],
       "Resource": "*"
-    },
-    {
-      "Sid": "IAMUpdatePolicies",
-      "Effect": "Allow",
-      "Action": ["iam:PutRolePolicy"],
-      "Resource": [
-        "arn:aws:iam::580148408154:role/service-role/bws-lambda-role",
-        "arn:aws:iam::580148408154:role/bws-glue-role"
-      ]
     }
   ]
 }
