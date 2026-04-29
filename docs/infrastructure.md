@@ -1,47 +1,54 @@
 # Infrastructure & CI/CD
 
-Unlike previous versions of our pipeline architectures that relied heavily on manual configurations or container-based orchestrators like Airflow, the EpiMind project fully embraces **Infrastructure as Code (IaC)** and **Continuous Deployment**.
+Unlike previous pipeline architectures that relied on manual configurations or container-based orchestrators like Airflow, the EpiMind project fully embraces **Infrastructure as Code (IaC)** and **Continuous Deployment (CI/CD)**. This ensures our cloud environment is reproducible, secure, and entirely automated.
 
 ---
 
-## Terraform (Infrastructure as Code)
+## 🏗️ What is Terraform?
 
-All AWS resources are defined using **Terraform**. This ensures:
+**[Terraform](https://developer.hashicorp.com/terraform/intro)** is an open-source Infrastructure as Code (IaC) software tool created by HashiCorp. It allows you to define both cloud and on-premise resources in human-readable configuration files that you can version, reuse, and share. 
+*Learn more:* [What is Infrastructure as Code? (AWS Guide)](https://aws.amazon.com/what-is/iac/)
+
+**What Terraform does in this project:**
+Instead of clicking through the AWS Console to create tables and grant permissions, Terraform reads our `.tf` files located in the [`aws/terraform/`](../aws/terraform/) directory and talks directly to the AWS API to provision exactly what we need. 
+
 - **Reproducibility:** Anyone can deploy the entire stack from scratch in minutes.
-- **State Management:** AWS resources are tracked and updated efficiently without UI clicks.
-- **Security:** IAM roles, policies, and permissions are explicitly defined in code, following the principle of least privilege.
-
-The Terraform configuration is modularized, handling DynamoDB tables, Step Functions, S3 buckets, IAM roles, and Glue jobs simultaneously.
+- **State Management:** AWS resources are tracked. If a resource is deleted manually, Terraform knows and recreates it.
+- **Least Privilege:** IAM roles, policies, and permissions are explicitly defined and locked down in code.
 
 ---
 
-## CI/CD with GitHub Actions
+## 🚀 CI/CD with GitHub Actions
 
-We use **GitHub Actions** to automate our deployments.
+We use **[GitHub Actions](https://docs.github.com/en/actions)** as our CI/CD runner. While Terraform creates the "empty houses" (buckets, roles, functions), GitHub Actions handles putting the "furniture" inside (uploading code, running tests, syncing configurations).
 
-Whenever a push is made to the repository, the CI/CD pipeline triggers. It validates the code and applies changes directly to AWS.
+Whenever a developer pushes code to the `master` branch, GitHub Actions is triggered automatically.
 
-![GitHub Actions Flow](img/gtihub_actions.png)
+> **In other words:** If you change an IAM policy, update a Python script, or modify a DynamoDB table configuration locally and run `git push`, the changes will automatically pass through GitHub Actions. The pipeline runs the tests, invokes Terraform, and pushes the updates directly to AWS with zero manual intervention.
 
-**What the pipeline does:**
-1. Separates deployments for infrastructure (Terraform) and application (Streamlit / Scripts).
-2. Deploys updated AWS Lambdas and Glue scripts to S3 automatically.
-3. Applies Terraform changes safely to the AWS account.
-4. Restarts application servers if needed to reflect the latest UI changes.
+![CI/CD Pipeline Flow](img/04_cicd/01_pipeline_flowchart.png)
 
-This ensures zero-downtime updates and maintains a strict version-controlled record of every infrastructure change.
+> [!NOTE]
+> Want to see the interactive flowchart? [Open Interactive Diagram in Browser](img/04_cicd/01_pipeline_flowchart.drawio.html)
 
----
+### The 5 Modular Workflows
 
-## AWS Step Functions Orchestration
+Instead of one massive pipeline, we split our CI/CD into 5 focused workflows. This saves build minutes and ensures we only deploy what changed. You can view the original YAML configurations here:
 
-We transitioned from Apache Airflow to **AWS Step Functions**.
+1. 🔐 **[`aws_iam_policies.yml`](../.github/workflows/aws_iam_policies.yml)**
+   - **What it does:** Updates IAM Roles and Policies using Terraform.
+   - **Why:** Separated for security. Modifying permissions is critical and tracked independently.
 
-**Why?**
-- **Serverless:** No EC2 instances to maintain just for orchestration.
-- **Native Integration:** Direct, seamless triggering of Lambdas and Glue jobs.
-- **Visual Workflows:** Step Functions provide a clear UI to track the flow of data and visually identify exactly where failures happen.
+2. 📜 **[`aws_scripts.yml`](../.github/workflows/aws_scripts.yml)**
+   - **What it does:** Runs all `pytest` unit tests. If tests pass, it zips and uploads PySpark scripts, Lambda functions, and shared Python modules straight to S3.
+   - **Why:** This is the core application logic deployer.
 
-![Step Functions Graph](img/stepfunctions_graph.png)
+3. 🗄️ **[`terraform_dynamodb.yml`](../.github/workflows/terraform_dynamodb.yml)**
+   - **What it does:** Applies Terraform state specifically for the DynamoDB configuration tables.
 
-Step Functions manage the flow of the entire Medallion Architecture, executing tasks step-by-step and providing built-in retry and catch mechanisms for transient errors.
+4. ⚙️ **[`terraform_step_functions.yml`](../.github/workflows/terraform_step_functions.yml)**
+   - **What it does:** Applies Terraform state to build and link the AWS Step Functions state machine.
+
+5. 🖥️ **[`ec2_streamlit.yml`](../.github/workflows/ec2_streamlit.yml)**
+   - **What it does:** Connects to the AWS EC2 instance via SSH, pulls the latest GitHub repository, rebuilds the Docker container, and restarts the Streamlit server.
+   - **Why:** Ensures zero-downtime updates to the web dashboard.

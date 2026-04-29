@@ -4,7 +4,7 @@ This document outlines the data engineering pipeline for the EpiMind project, co
 
 ## Architecture Diagram
 
-![EpiMind Architecture Diagram](img/bws-data-epi-architutecture.jpg)
+![EpiMind Architecture Diagram](img/01_architecture/01_main_architecture.jpg)
 
 ---
 
@@ -18,7 +18,7 @@ The state machine coordinates the workflow: extracting data via Lambda, passing 
 
 [View Step Function Pipeline Definition](../aws/terraform/step_functions/)
 
-![Step Functions Graph](img/stepfunctions_graph.png)
+![Step Functions Graph](img/04_cicd/03_stepfunctions_graph.png)
 
 ---
 
@@ -78,7 +78,7 @@ This job reads all its configuration from DynamoDB (`ingestion_params`) — sour
 
 **Script:** `aws/scripts/glue_scripts/bronze_to_silver.py`
 
-![Athena Silver Query](img/athena_silver_select_query.png)
+![Athena Silver Query](img/05_observability/03_silver_query.png)
 
 ### Gold Layer — Aggregation and Analytics - (PySpark)
 
@@ -103,7 +103,7 @@ Like the Bronze to Silver job, configuration is pulled from DynamoDB (`refined_p
 
 **Script:** `aws/scripts/glue_scripts/silver_to_gold.py`
 
-![Athena Gold Query](img/athena_gold_select_query_1.png)
+![Athena Gold Query](img/05_observability/04_gold_query.png)
 
 ---
 
@@ -113,7 +113,7 @@ After the Gold layer is ready, the data is immediately available for the Streaml
 
 The dashboard runs in a **Docker container** on an EC2 instance, making it fully available on the public web. It provides visual filters, maps, and an **AI Analyst** capable of answering natural language questions by dynamically translating them into Athena SQL queries based on the database schema.
 
-![Streamlit Dashboard](img/dashboard_vigilancia_visao_geral.png)
+![Streamlit Dashboard](img/02_dashboard/01_overview.png)
 
 > [!NOTE]
 > For detailed instructions on the UI, see [Dashboard Guide](dashboard.md).
@@ -127,7 +127,7 @@ The dashboard runs in a **Docker container** on an EC2 instance, making it fully
 
 To ensure the codebase remains DRY (Don't Repeat Yourself), all pipelines pull their configuration from **DynamoDB**.
 
-![DynamoDB Tables](img/dynamo_tables.png)
+![DynamoDB Tables](img/01_architecture/03_dynamodb_tables.png)
 
 - **Execution Parameters**: Table definitions, paths, and metadata.
 - **Data quality tests parameters**: Table definitions, paths, and metadata.
@@ -147,7 +147,7 @@ This custom observability approach is the primary way to monitor the pipeline. C
 > [!NOTE]
 > For full logging and quality module documentation, see [modules.md](modules.md).
 
-![Execution Logs Table](img/athena_logs_select_query.png)
+![Execution Logs Table](img/05_observability/02_execution_logs.png)
 
 ---
 

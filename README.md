@@ -25,6 +25,7 @@ Running on AWS with modularized logging, automated data quality testing, and ema
 - [Local Setup](#local-setup)
 - [Technology Stack](#technology-stack)
 - [Key Features](#key-features)
+- [AI Analyst Integration](#ai-analyst-integration)
 - [Documentation](#documentation)
 - [Code Organization](#code-organization)
 - [Infrastructure & CI/CD](#infrastructure--cicd)
@@ -37,7 +38,7 @@ Running on AWS with modularized logging, automated data quality testing, and ema
 
 **Access the dashboard:** [https://epimind.com.br/](https://epimind.com.br/)
 
-![Dashboard Screenshot](docs/img/dashboard_vigilancia_visao_geral.png)
+![Dashboard Screenshot](docs/img/02_dashboard/01_overview.png)
 
 Interactive analytics with three main sections:
 
@@ -58,7 +59,7 @@ Watch demo videos to see the dashboard in action:
 
 ## Architecture Overview
 
-![EpiMind Architecture](docs/img/bws-data-epi-architutecture.jpg)
+![EpiMind Architecture](docs/img/01_architecture/01_main_architecture.jpg)
 
 The pipeline runs entirely on a serverless AWS stack, orchestrated by AWS Step Functions and provisioned using Terraform. Data flows through three layers:
 
@@ -149,6 +150,15 @@ If you want to run the project locally, there are two simple ways to initialize 
 **Optimized Storage** – Silver and Gold layers use partitioning by date for query performance. Gold layer uses Parquet for cost-efficient query performance via Athena.
 
 **Custom Domain Setup** – The dashboard is exposed professionally via `epimind.com.br`, managed through `registro.br` and AWS.
+
+<a id="ai-analyst-integration"></a>
+
+## 🤖 AI Analyst Integration
+
+EpiMind features an embedded AI assistant powered by **Anthropic Claude Haiku** via AWS Bedrock. Users can ask epidemiological questions in natural language, and the system dynamically translates them into safe, optimized Athena SQL queries, fetches the results, and returns a human-readable analysis. The AI is strictly bound by custom prompts to prevent hallucinations and SQL injections.
+
+> [!NOTE]
+> [Read the full AI Guide (Flowchart, Bedrock Code & System Prompts) →](docs/ai_guide.md)
 
 <a id="documentation"></a>
 
