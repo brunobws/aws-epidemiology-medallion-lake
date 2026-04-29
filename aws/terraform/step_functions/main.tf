@@ -85,3 +85,53 @@ resource "aws_sfn_state_machine" "sfn_pipeline" {
 
   definition = file("${path.module}/pipeline_definition.json")
 }
+
+# ─── 4. IAM Role for EventBridge ──────────────────────────────────────────────
+# Allows EventBridge to trigger the Step Function
+resource "aws_iam_role" "eventbridge_sfn_role" {
+  name = "eventbridge_sfn_invoke_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "eventbridge_sfn_policy" {
+  name = "eventbridge_sfn_invoke_policy"
+  role = aws_iam_role.eventbridge_sfn_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["states:StartExecution"]
+        Resource = [aws_sfn_state_machine.sfn_pipeline.arn]
+      }
+    ]
+  })
+}
+
+# ─── 5. EventBridge Rule (Scheduler) ──────────────────────────────────────────
+# Schedule to run once a week, every Sunday at 00:00 UTC
+resource "aws_cloudwatch_event_rule" "weekly_pipeline_rule" {
+  name                = "semanal-bronze-to-gold-rule"
+  description         = "Triggers the Semanal-Bronze-To-Gold-Pipeline Step Function once a week"
+  schedule_expression = "cron(0 0 ? * SUN *)" 
+}
+
+resource "aws_cloudwatch_event_target" "sfn_target" {
+  rule      = aws_cloudwatch_event_rule.weekly_pipeline_rule.name
+  target_id = "TriggerStepFunction"
+  arn       = aws_sfn_state_machine.sfn_pipeline.arn
+  role_arn  = aws_iam_role.eventbridge_sfn_role.arn
+}

@@ -21,12 +21,13 @@
         "arn:aws:s3:::bws-artifacts-sae1-prd",
         "arn:aws:s3:::bws-artifacts-sae1-prd/*"
       ]
-    },
+    }, 
     {
       "Sid": "TerraformAndIAM",
       "Effect": "Allow",
       "Action": [
         "states:*",
+        "events:*",
         "iam:GetRole",
         "iam:CreateRole",
         "iam:PutRolePolicy",
