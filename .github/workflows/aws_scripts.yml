@@ -45,46 +45,56 @@ jobs:
       - name: Deploy BronzeApiCaptureInfoDengue
         run: |
           cd aws/scripts/lambda_scripts
-          zip BronzeApiCaptureInfoDengue.zip BronzeApiCaptureInfoDengue.py
+          cp BronzeApiCaptureInfoDengue.py lambda_function.py
+          zip BronzeApiCaptureInfoDengue.zip lambda_function.py
           aws lambda update-function-code \
             --function-name BronzeApiCaptureInfoDengue \
             --zip-file fileb://BronzeApiCaptureInfoDengue.zip
+          rm lambda_function.py
           echo "✅ BronzeApiCaptureInfoDengue updated"
 
       - name: Deploy BronzeApiCaptureIbgeMunicipios
         run: |
           cd aws/scripts/lambda_scripts
-          zip BronzeApiCaptureIbgeMunicipios.zip BronzeApiCaptureIbgeMunicipios.py
+          cp BronzeApiCaptureIbgeMunicipios.py lambda_function.py
+          zip BronzeApiCaptureIbgeMunicipios.zip lambda_function.py
           aws lambda update-function-code \
             --function-name BronzeApiCaptureIbgeMunicipios \
             --zip-file fileb://BronzeApiCaptureIbgeMunicipios.zip
+          rm lambda_function.py
           echo "✅ BronzeApiCaptureIbgeMunicipios updated"
 
       - name: Deploy BronzeApiCaptureIbgePopulacao
         run: |
           cd aws/scripts/lambda_scripts
-          zip BronzeApiCaptureIbgePopulacao.zip BronzeApiCaptureIbgePopulacao.py
+          cp BronzeApiCaptureIbgePopulacao.py lambda_function.py
+          zip BronzeApiCaptureIbgePopulacao.zip lambda_function.py
           aws lambda update-function-code \
             --function-name BronzeApiCaptureIbgePopulacao \
             --zip-file fileb://BronzeApiCaptureIbgePopulacao.zip
+          rm lambda_function.py
           echo "✅ BronzeApiCaptureIbgePopulacao updated"
 
       - name: Deploy BronzeS3CaptureSinan
         run: |
           cd aws/scripts/lambda_scripts
-          zip BronzeS3CaptureSinan.zip BronzeS3CaptureSinan.py
+          cp BronzeS3CaptureSinan.py lambda_function.py
+          zip BronzeS3CaptureSinan.zip lambda_function.py
           aws lambda update-function-code \
             --function-name BronzeS3CaptureSinanNotif \
             --zip-file fileb://BronzeS3CaptureSinan.zip
+          rm lambda_function.py
           echo "✅ BronzeS3CaptureSinanNotif updated"
 
       - name: Deploy CleanFolder
         run: |
           cd aws/scripts/lambda_scripts
-          zip CleanFolder.zip CleanFolder.py
+          cp CleanFolder.py lambda_function.py
+          zip CleanFolder.zip lambda_function.py
           aws lambda update-function-code \
             --function-name CleanFolder \
             --zip-file fileb://CleanFolder.zip
+          rm lambda_function.py
           echo "✅ CleanFolder updated"
 
   # ─────────────────────────────────────────────────────────────────────────────
