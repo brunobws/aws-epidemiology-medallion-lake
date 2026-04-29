@@ -30,7 +30,6 @@ jobs:
   deploy-lambda:
     name: Update Lambda Functions
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.commits), 'aws/scripts/lambda_scripts')
 
     steps:
       - name: Checkout repository
@@ -95,7 +94,6 @@ jobs:
   deploy-glue:
     name: Update Glue Scripts on S3
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.commits), 'aws/scripts/glue_scripts')
 
     steps:
       - name: Checkout repository
@@ -111,7 +109,7 @@ jobs:
       - name: Upload Glue scripts to S3
         run: |
           aws s3 sync aws/scripts/glue_scripts/ \
-            s3://${{ env.ARTIFACT_BUCKET }}/scripts/ \
+            s3://${{ env.ARTIFACT_BUCKET }}/glue/scripts/ \
             --include "*.py" \
             --delete
           echo "✅ Glue scripts synced to S3"
@@ -120,14 +118,14 @@ jobs:
         run: |
           aws glue update-job \
             --job-name bronze_to_silver \
-            --job-update '{"Command":{"Name":"glueetl","ScriptLocation":"s3://${{ env.ARTIFACT_BUCKET }}/scripts/bronze_to_silver.py","PythonVersion":"3"}}'
+            --job-update '{"Command":{"Name":"glueetl","ScriptLocation":"s3://${{ env.ARTIFACT_BUCKET }}/glue/scripts/bronze_to_silver.py","PythonVersion":"3"}}'
           echo "✅ bronze_to_silver updated"
 
       - name: Update script path for silver_to_gold
         run: |
           aws glue update-job \
             --job-name silver_to_gold \
-            --job-update '{"Command":{"Name":"glueetl","ScriptLocation":"s3://${{ env.ARTIFACT_BUCKET }}/scripts/silver_to_gold.py","PythonVersion":"3"}}'
+            --job-update '{"Command":{"Name":"glueetl","ScriptLocation":"s3://${{ env.ARTIFACT_BUCKET }}/glue/scripts/silver_to_gold.py","PythonVersion":"3"}}'
           echo "✅ silver_to_gold updated"
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -137,7 +135,6 @@ jobs:
   deploy-modules:
     name: Sync Modules to S3 pgms/
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.commits), 'aws/modules')
 
     steps:
       - name: Checkout repository
@@ -165,7 +162,6 @@ jobs:
   deploy-sql-gold:
     name: Sync SQL Gold to S3 sql/gold/
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.commits), 'aws/sql/gold')
 
     steps:
       - name: Checkout repository
