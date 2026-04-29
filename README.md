@@ -1,13 +1,20 @@
   # EpiMind Data Platform on AWS
 
 ![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)
-![Terraform](https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white)
+![Apache Spark](https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apachespark&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![AWS Step Functions](https://img.shields.io/badge/Step_Functions-FF4F8B?style=for-the-badge&logo=amazon-aws&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![AI](https://img.shields.io/badge/Artificial%20Intelligence-000000?style=for-the-badge&logo=openai&logoColor=white)
+![Great Expectations](https://img.shields.io/badge/Great_Expectations-FF6B6B?style=for-the-badge&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-4479A1?style=for-the-badge&logo=github-actions&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-A production-grade data platform that monitors arbovirus epidemiological data (like Dengue) in the state of São Paulo, Brazil. It ingests data through a Medallion Architecture, integrating Artificial Intelligence (AI) for advanced data querying, and serves analytics via a web Streamlit dashboard hosted on a custom domain. Fully deployed using Terraform (IaC) and automated via GitHub Actions CI/CD.
+A production-grade data platform that monitors arbovirus epidemiological data (like Dengue) in the state of São Paulo, Brazil. It ingests data through a Medallion Architecture, integrating Artificial Intelligence (AI) for advanced data querying, and serves analytics via a web Streamlit dashboard hosted on a custom domain https://epimind.com.br/. 
+
+Running on AWS with modularized logging, automated data quality testing, and email notifications for pipeline failures, with an event-configuration driven architecture. The platform currently extracts from 4 public APIs, treating and ingesting more than 3 Million records. Fully deployed using Terraform (IaC) and automated via GitHub Actions CI/CD.
 
 ## Table of Contents
 
@@ -15,11 +22,13 @@ A production-grade data platform that monitors arbovirus epidemiological data (l
 - [Architecture Overview](#architecture-overview)
 - [How It Works](#how-it-works)
 - [Cloud Setup](#cloud-setup)
+- [Local Setup](#local-setup)
 - [Technology Stack](#technology-stack)
 - [Key Features](#key-features)
 - [Documentation](#documentation)
 - [Code Organization](#code-organization)
 - [Infrastructure & CI/CD](#infrastructure--cicd)
+- [Testing](#testing)
 - [Future Enhancements](#future-enhancements)
 
 <a id="live-dashboard"></a>
@@ -34,7 +43,7 @@ Interactive analytics with three main sections:
 
 - **Surveillance (Vigilância)** – View general indicators and a detailed epidemiological ranking of cities.
 - **AI Analyst (IA Analista)** – Ask questions using natural language to an AI assistant powered by your Data Lake.
-- **Observability** – Real-time logs showing successful pipeline runs, errors, and performance metrics.
+- **Observability** – Real-time logs showing successful pipeline runs, errors, performance metrics, and data quality results (BDQ Tests).
 
 Watch demo videos to see the dashboard in action:
 
@@ -51,7 +60,7 @@ Watch demo videos to see the dashboard in action:
 
 ![EpiMind Architecture](docs/img/bws-data-epi-architutecture.jpg)
 
-The pipeline runs entirely on a serverless AWS stack, orchestrated by AWS Step Functions and provisioned using Terraform. 
+The pipeline runs entirely on a serverless AWS stack, orchestrated by AWS Step Functions and provisioned using Terraform. Data flows through three layers:
 
 - **Bronze** – Raw data from APIs, preserved in S3 for full reprocessability.
 - **Silver** – PySpark-transformed [Parquet](https://parquet.apache.org/) files, partitioned for efficient querying.
@@ -59,9 +68,10 @@ The pipeline runs entirely on a serverless AWS stack, orchestrated by AWS Step F
 
 > [!NOTE]
 > [Full architecture documentation →](docs/architecture.md)
+> [Interactive Miro Dashboard →](https://miro.com/app/board/uXjVHagcgOk=/?share_link_id=204214847785)
 
 <a id="how-it-works"></a>
-
+ 
 ## How It Works
 
 The automated pipeline is orchestrated by **AWS Step Functions**:
@@ -94,13 +104,22 @@ With read-only access, you can:
 - Access DynamoDB configuration tables.
 - View Terraform state if applicable.
 
+<a id="local-setup"></a>
+
+## Local Setup 💻
+
+If you want to run the project locally, there are two simple ways to initialize the dashboard and environment:
+
+- **Using Windows Batch:** Simply double-click the `.bat` file in the project root. It will automatically set up the environment and launch the Streamlit dashboard.
+- **Using PowerShell:** Run the `.ps1` script to activate the virtual environment and initialize all local dependencies.
+
 <a id="technology-stack"></a>
 
 ## Technology Stack
 
 | Component | Technology |
 |-----------|------------|
-| **Cloud** | [AWS Lambda](https://docs.aws.amazon.com/lambda/), [Glue](https://docs.aws.amazon.com/glue/), [Athena](https://docs.aws.amazon.com/athena/), [S3](https://docs.aws.amazon.com/s3/), [DynamoDB](https://docs.aws.amazon.com/dynamodb/), [Step Functions](https://aws.amazon.com/step-functions/) |
+| **Cloud** | [AWS Lambda](https://docs.aws.amazon.com/lambda/), [Glue](https://docs.aws.amazon.com/glue/), [Athena](https://docs.aws.amazon.com/athena/), [S3](https://docs.aws.amazon.com/s3/), [DynamoDB](https://docs.aws.amazon.com/dynamodb/), [Step Functions](https://aws.amazon.com/step-functions/), [EventBridge](https://aws.amazon.com/eventbridge/) |
 | **IaC & CI/CD**| [Terraform](https://www.terraform.io/), [GitHub Actions](https://github.com/features/actions) |
 | **Orchestration** | AWS Step Functions |
 | **Processing** | Python, PySpark, SQL |
@@ -117,7 +136,17 @@ With read-only access, you can:
 
 **AI Integration** – Seamless connection with LLMs within the dashboard to translate human questions into data insights.
 
-**Configuration-driven Pipeline** – All transformations and ingestion schemas are parameterized in DynamoDB tables.
+**Modularized Logging** – All components (Lambda, Glue jobs) use a centralized Logs class that writes structured execution records with step-level timing to an Athena table. Each log includes job name, status, warnings, errors, and custom metadata.
+
+**Data Quality Framework** – Automated validation tests built on Great Expectations check data completeness, accuracy, and consistency at each layer. Quality metrics are stored in Athena for historical analysis and trend detection.
+
+**Email Alerting** – Configurable email notifications using AWS SES for pipeline failures and warnings. Alert recipients and thresholds are managed in DynamoDB.
+
+**Generic Processing Engines** – Both Glue jobs are designed as configuration-driven engines. Pass different DynamoDB parameters and they process entirely different datasets without touching the code.
+
+**DynamoDB Configuration** – Pipeline parameters, notification settings, and job configurations stored in DynamoDB tables for easy management without code changes.
+
+**Optimized Storage** – Silver and Gold layers use partitioning by date for query performance. Gold layer uses Parquet for cost-efficient query performance via Athena.
 
 **Custom Domain Setup** – The dashboard is exposed professionally via `epimind.com.br`, managed through `registro.br` and AWS.
 
@@ -125,9 +154,13 @@ With read-only access, you can:
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) – Design patterns, data flow, component details.
-- [Dashboard & AI](docs/dashboard.md) – Using Streamlit analytics and the IA Analyst.
-- [Infrastructure & CI/CD](docs/infrastructure.md) – Terraform configuration, Step Functions, and GitHub Actions.
+- [Architecture](docs/architecture.md) – Design patterns, data flow, component details
+- [Dashboard Guide](docs/dashboard.md) – Using Streamlit analytics and Network flows
+- [AI Guide](docs/ai_guide.md) – Explaining how the AI Analyst works
+- [Infrastructure as Code & CI/CD](docs/infrastructure.md) – Terraform configuration, and GitHub Actions
+- [Modules](docs/modules.md) – Shared Python modules: Logs, Quality, AwsManager
+- [DynamoDB Parameters](docs/dynamo_params.md) – Pipeline configuration tables
+- [Unit Tests](docs/unit_tests.md) – Full test reference with per-class test tables
 
 <a id="code-organization"></a>
 
@@ -147,12 +180,12 @@ With read-only access, you can:
 
 The whole project runs as Code. See the [Infrastructure Guide](docs/infrastructure.md) for how Terraform manages the deployment, and how GitHub Actions automates changes to Lambdas, Glue, and the Step Functions workflow.
 
-<a id="future-enhancements"></a>
+<a id="testing"></a>
 
-## Future Enhancements
+## Testing
 
-- **Data Quality Framework** – Implementing quality validation tests across all layers (expected soon).
-- **Neighborhood-level Analysis** – Expanding data granularity to provide localized maps.
+**Unit Tests** – 44 pytest tests covering the shared modules and Lambda ingestion logic, runnable fully offline with no AWS dependencies. See `tests/` directory for test suites.
+
 
 ---
 
@@ -164,3 +197,4 @@ Thanks for reading! If you have any questions about the pipeline or would like t
 - Email: brun0ws@outlook.com
 - LinkedIn: [Bruno Silva](https://www.linkedin.com/in/brunowds/)
 - WhatsApp: [Message me](https://wa.me/5515997595138)
+- Phone: +55 15 99759-5138

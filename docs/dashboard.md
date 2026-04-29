@@ -1,10 +1,8 @@
-# Dashboard & AI Integration
+# Dashboard Guide
 
-The Streamlit dashboard serves as the front-end for the EpiMind platform. It connects directly to Athena to fetch curated data, provides observability logs, and features a smart AI Analyst capable of answering epidemiological questions in natural language.
+The Streamlit dashboard serves as the front-end for the EpiMind platform. It connects directly to Athena to fetch curated data and provides observability logs.
 
 **Live dashboard:** [https://epimind.com.br/](https://epimind.com.br/)
-
-The platform has three main sections.
 
 ---
 
@@ -24,27 +22,7 @@ Calculates risk scores based on disease thresholds and population data.
 
 ---
 
-## 2. AI Analyst (IA Analista)
-
-A unique feature of this project is the integration of an AI Assistant that understands the underlying AWS architecture and the data schemas. 
-
-Users can ask complex questions such as:
-> *"What is the current dengue situation in Sorocaba?"*
-
-![AI Prompt](img/dashboard_IA_pergunta_sorocaba.png)
-![AI Answer](img/dashboard_IA_pergunta_dengue.png)
-![AI Details](img/dashboard_IA_pergunta_dengue_2.png)
-
-**Smart Filtering (Out of Scope):**
-The AI is configured with guardrails. If a user asks a question entirely unrelated to epidemiology or the available arbovirus data, it courteously refuses to answer, protecting system resources and avoiding database hallucinations.
-
-![Out of Scope Handling](img/dashboard_IA_fora_do_escopo.png)
-
-[Watch AI Analyst Demo](videos/Dasboard_IA.mp4)
-
----
-
-## 3. Observability (Observabilidade)
+## 2. Observability (Observabilidade)
 
 A centralized view of pipeline health. It reads directly from the `execution_logs` table in Athena to show:
 - Whether Step Functions, Lambdas, and Glue jobs succeeded or failed.
@@ -57,8 +35,15 @@ A centralized view of pipeline health. It reads directly from the `execution_log
 
 ---
 
-## Custom Domain Setup
+## 3. Network Flows (Registro.br & Nginx)
 
-The dashboard is professionally hosted on an EC2 instance, and its DNS is fully managed via a custom domain (`epimind.com.br`) registered in **registro.br** and routed through AWS.
+The dashboard is professionally hosted on an EC2 instance, making it fully available on the web without specifying ports.
+
+**How the routing works:**
+1. **DNS Registration:** The domain `epimind.com.br` is registered and managed in **Registro.br**.
+2. **DNS Resolution:** The domain points to the AWS Elastic IP attached to the EC2 instance.
+3. **Nginx Reverse Proxy:** Incoming HTTP/HTTPS traffic hits the EC2 instance, where **Nginx** is listening on port 80. Nginx acts as a reverse proxy, forwarding requests directly to the Streamlit container running internally on port 8501.
+
+This architecture provides a clean URL and a secure entry point for the application.
 
 ![Registro.br Custom Domain](img/conta_registro_br.png)
