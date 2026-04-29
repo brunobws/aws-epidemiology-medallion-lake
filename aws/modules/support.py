@@ -18,6 +18,7 @@
 
 ########## Imports ##########
 import traceback
+import json
 from datetime import datetime, timedelta
 
 try:
@@ -183,8 +184,15 @@ def eval_values(
             elif value.lower() == "true":
                 return True
 
-            # Safely evaluate remaining string types (dicts, lists, numbers, etc.)
-            return eval(value)  # noqa: S307 — controlled internal usage
+            # Try standard JSON parsing first
+            try:
+                return json.loads(value)
+            except Exception:
+                pass
+
+            # Fallback for Python-style strings (e.g., single quotes).
+            # Provide JSON-compatible boolean/null mapping to prevent NameErrors.
+            return eval(value, {"__builtins__": {}}, {"true": True, "false": False, "null": None})  # noqa: S307
 
         return value
 
