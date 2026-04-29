@@ -37,7 +37,7 @@ from utils import AwsManager, Dynamo
 from logs import Logs
 from support import split_target_table
 #######################################
-
+ 
 ############### Config globals var ####################################
 
 JOB_NAME      = "BronzeApiCaptureIbgeMunicipios"
