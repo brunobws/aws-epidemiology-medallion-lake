@@ -178,7 +178,7 @@ partition_column = ingestion_params.get('partition_column')
 iceberg_query    = ingestion_params.get('iceberg_query', None)
 lit_values       = eval_values(ingestion_params.get('lit_values', None), trgt_tbl, logger, manager, email_on_failure)
 
- 
+
 # Guard against missing critical ingestion parameters before going further
 _missing_params = {
     'ext': ext,
