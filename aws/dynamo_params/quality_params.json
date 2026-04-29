@@ -41,16 +41,26 @@
         "stop_job": false,
         "quality_params": {
             "not_null": {
-                "column": "cd_geocode,ds_doenca,vl_casos"
+                "column": "cd_geocode,ds_doenca,nr_semana_epi,nr_nivel_alerta,vl_casos"
             },
             "values_to_be_in_set": {
-                "column": "ds_doenca,nr_nivel_alerta",
-                "type": "str,int",
-                "set_values": [["dengue", "chikungunya", "zika"], [1, 2, 3, 4]]
+                "column": "ds_doenca,nr_nivel_alerta,vl_receptividade,vl_transmissao",
+                "type": "str,int,int,int",
+                "set_values": [
+                    ["dengue", "chikungunya", "zika"], 
+                    [1, 2, 3, 4], 
+                    [0, 1, 2, 3, 4], 
+                    [0, 1, 2, 3, 4]
+                ]
+            },
+            "values_between": {
+                "column": "nr_semana_epi,vl_casos",
+                "min": "1,0",
+                "max": "53,1000000"
             },
             "df_count_between": {
                 "min": 1,
-                "max": 100000
+                "max": 200000
             }
         }
     },

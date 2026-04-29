@@ -25,7 +25,7 @@
     {
     "trgt_tbl": "infodengue_tb_alertas",
     "ext": "json",
-    "has_bdq": false,
+    "has_bdq": true,
     "mode": "overwrite",
     "partition_column": "nr_ano_epi",
     "s3_bronze_path": "s3://bws-dl-bronze-sae1-prd/infodengue/tb_alertas/",
