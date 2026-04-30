@@ -7,12 +7,14 @@ All tests run **fully offline** — no AWS credentials, no network access, no in
 ---
 
 ## How to Run
-**Install pytest:**
+
+**1. Install Testing Dependencies:**
+To ensure your environment is clean and separate from production, install the development dependencies (which includes `pytest`, `moto`, and `pyspark`):
 ```bash
-pip install pytest
+pip install -r requirements-dev.txt
 ```
 
-**Run all tests:**
+**2. Run all tests:**
 ```bash
 python -m pytest tests/ -v
 ```
@@ -26,8 +28,10 @@ python -m pytest tests/ -v
 | [tests/test_lambda_ibge_populacao.py](../tests/test_lambda_ibge_populacao.py) | `aws/scripts/lambda_scripts/BronzeApiCaptureIbgePopulacao.py` |
 | [tests/test_lambda_infodengue.py](../tests/test_lambda_infodengue.py) | `aws/scripts/lambda_scripts/BronzeApiCaptureInfoDengue.py` |
 | [tests/test_lambda_sinan.py](../tests/test_lambda_sinan.py) | `aws/scripts/lambda_scripts/BronzeS3CaptureSinan.py` |
+| [tests/test_support.py](../tests/test_support.py) | `aws/modules/support.py` |
+| [tests/test_pyspark_utils.py](../tests/test_pyspark_utils.py) | `aws/modules/pyspark_utils.py` |
 
-**Total: 88 tests**
+**Total: 117 tests**
 
 ### 1. `test_lambda_ibge_municipios.py`
 Tests the extraction of IBGE spatial data.
@@ -51,14 +55,25 @@ Tests the extraction of CSVs from government open data ZIP files.
 
 ---
 
+### 5. `test_support.py`
+Tests the pure Python shared utilities (`aws/modules/support.py`).
+- **TestEvalValues:** Ensures that string literals from DynamoDB (`'true'`, `'[1, 2]'`) are parsed correctly into Python types to prevent downstream NameErrors.
+- **TestWriteErrorLogs:** Asserts that exceptions are caught, logged gracefully, and correctly trigger AWS SES failure email alerts.
+
+### 6. `test_pyspark_utils.py`
+Tests the Big Data Spark transformations (`aws/modules/pyspark_utils.py`).
+- Mocks a small 2-row Spark DataFrame to assert that `cast_df()` correctly trims string spaces, casts integers, and converts European double patterns (`5.000,50` -> `5000.50`) without requiring an AWS Glue cluster.
+
+---
+
 ## What Else Can Be Tested? (Next Steps)
-While our Lambda (Bronze) ingestion layer is heavily tested, we can expand our suite to other layers:
+While our Ingestion and Transformation layers are heavily tested, we can still expand our suite:
 
 1. **Shared Modules (`aws/modules/`):**
-   - We should add tests for `support.py` (e.g. testing the `eval_values` function that caused the DynamoDB bug).
    - Tests for `logs.py` to ensure it formats the S3 Parquet schema correctly.
-2. **PySpark Glue Jobs (`aws/scripts/glue_scripts/`):**
-   - Using `pytest-spark` and `chispa`, we can spin up a local Spark Session during tests. We can pass a mock DataFrame into `bronze_to_silver.py` and assert that columns were correctly renamed, cast to integers/dates, and partitioned.
+   - Tests for `quality.py` to ensure the Great Expectations wrapper properly raises alerts on `df_count` drops.
+2. **End-to-End Orchestration:**
+   - Use `moto`'s Step Functions mock to trigger a full simulated run of the pipeline locally.
 
 ---
 

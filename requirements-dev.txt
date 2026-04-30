@@ -1,0 +1,8 @@
+# Development & Testing Dependencies
+pytest>=7.4.0
+pytest-mock>=3.10.0
+moto>=4.2.0
+
+# Big Data Testing (Optional for local Glue PySpark tests)
+pyspark>=3.4.0
+chispa>=0.9.2
