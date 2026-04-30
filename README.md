@@ -139,13 +139,13 @@ If you want to run the project locally, there are two simple ways to initialize 
 
 **Modularized Logging** – All components (Lambda, Glue jobs) use a centralized Logs class that writes structured execution records with step-level timing to an Athena table. Each log includes job name, status, warnings, errors, and custom metadata.
 
-**Data Quality Framework** – Automated validation tests built on Great Expectations check data completeness, accuracy, and consistency at each layer. Quality metrics are stored in Athena for historical analysis and trend detection.
+**Business Data Quality (BDQ)** – Automated validation tests built on Great Expectations check data completeness, accuracy, and consistency at each layer. Quality metrics are stored in Athena for historical analysis and trend detection, acting as an active firewall against corrupted government APIs.
 
-**Email Alerting** – Configurable email notifications using AWS SES for pipeline failures and warnings. Alert recipients and thresholds are managed in DynamoDB.
+**Email Alerting** – Configurable email notifications using AWS SES for pipeline failures and data quality reports. Alert recipients and thresholds are managed entirely in DynamoDB.
 
 **Generic Processing Engines** – Both Glue jobs are designed as configuration-driven engines. Pass different DynamoDB parameters and they process entirely different datasets without touching the code.
 
-**DynamoDB Configuration** – Pipeline parameters, notification settings, and job configurations stored in DynamoDB tables for easy management without code changes.
+**DynamoDB Configuration (Zero-Hardcoding)** – Pipeline parameters, notification settings, and data quality thresholds are stored dynamically in DynamoDB. The platform operates on a strict "Zero-Hardcoding Architecture".
 
 **Optimized Storage** – Silver and Gold layers use partitioning by date for query performance. Gold layer uses Parquet for cost-efficient query performance via Athena.
 
@@ -194,7 +194,14 @@ The whole project runs as Code. See the [Infrastructure Guide](docs/infrastructu
 
 ## Testing
 
-**Unit Tests** – 44 pytest tests covering the shared modules and Lambda ingestion logic, runnable fully offline with no AWS dependencies. See `tests/` directory for test suites.
+**Unit Tests** – A robust suite of **117 pytest tests** covering the shared modules, Lambda ingestion logic, and PySpark transformations (`pyspark_utils`). All tests are runnable fully offline without AWS dependencies (by mocking AWS services via `moto` and simulating local Spark DataFrames). See the `tests/` directory and `requirements-dev.txt` for details.
+
+<a id="future-enhancements"></a>
+
+## Future Enhancements
+
+- **Granular Spatial Analytics:** Refactoring the Gold layer ingestion pipeline to support neighborhood-level (Bairro/CEP) epidemiological granularity, allowing pinpoint detection of outbreaks within cities.
+- **Enhanced CI/CD Security:** Integrating `tfsec` and `tflint` into the GitHub Actions pipeline to catch infrastructure vulnerabilities automatically.
 
 
 ---
