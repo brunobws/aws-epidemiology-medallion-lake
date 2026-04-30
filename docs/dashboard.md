@@ -52,9 +52,9 @@ If an anomaly is detected during data ingestion (e.g., an external API goes down
 
 ![Ingestion Error Notification](img/05_observability/06_error_ses_email.png)
 
-### 🛡️ Big Data Quality (BDQ) Framework
+### 🛡️ Business Data Quality (BDQ) Framework
 
-To guarantee the reliability of the epidemiological insights shown on the dashboard, EpiMind relies on a robust **Data Quality (BDQ)** pipeline. This is handled by a custom Python module ([quality.py](../aws/modules/quality.py)) which wraps the industry-standard **Great Expectations** framework.
+To guarantee the reliability of the epidemiological insights shown on the dashboard, EpiMind relies on a robust **Business Data Quality (BDQ)** pipeline. This is handled by a custom Python module ([quality.py](../aws/modules/quality.py)) which wraps the industry-standard **Great Expectations** framework.
 
 **Why BDQ is Critical:**
 BDQ tests act as an automated firewall against corrupted health data. They are highly effective for catching anomalies before they reach the dashboard, such as:
