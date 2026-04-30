@@ -343,8 +343,8 @@ if has_bdq:
         id_column='trgt_tbl',
     )
 
-    quality_params = quality_records.get('quality_params')
-    stop_job       = quality_records.get('stop_job', False)
+    quality_params = eval_values(quality_records.get('quality_params'), trgt_tbl, logger, manager, email_on_failure)
+    stop_job       = eval_values(quality_records.get('stop_job', False), trgt_tbl, logger, manager, email_on_failure)
 
     if not quality_params:
         
