@@ -185,9 +185,9 @@ Results land in the `quality_logs` Athena table:
 
 ![Data quality logs table on Athena](img/05_observability/05_quality_logs.png)
 
-When a check fails, an email is dispatched via SES with the full HTML report attached:
+When quality checks run, an email is dispatched via SES with the full HTML report attached summarizing the results:
 
-![SES quality failure notification email](img/05_observability/08_failure_quality_test_ses.png)
+![SES quality success notification email](img/05_observability/09_success_quality_test_ses.png)
 
 ---
 
