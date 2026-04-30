@@ -52,10 +52,23 @@ If an anomaly is detected during data ingestion (e.g., an external API goes down
 
 ![Ingestion Error Notification](img/05_observability/06_error_ses_email.png)
 
-Furthermore, when raw data passes through the Medallion Data Quality gates (evaluating constraints like `not_null`, `values_between`, and `df_count`), a **Data Quality Report** is sent. This ensures that stakeholders have immediate confidence in the data being promoted to the Silver and Gold layers:
+### 🛡️ Big Data Quality (BDQ) Framework
+
+To guarantee the reliability of the epidemiological insights shown on the dashboard, EpiMind relies on a robust **Data Quality (BDQ)** pipeline. This is handled by a custom Python module ([quality.py](../aws/modules/quality.py)) which wraps the industry-standard **Great Expectations** framework.
+
+**Why BDQ is Critical:**
+BDQ tests act as an automated firewall against corrupted health data. They are highly effective for catching anomalies before they reach the dashboard, such as:
+- External government APIs dropping crucial columns (e.g., missing dengue case counts).
+- Truncated downloads or sudden data volume drops (`df_count` anomalies).
+- Unexpected categories or out-of-range historical data (e.g., negative cases, invalid IBGE city codes).
+
+By preventing "garbage in, garbage out", BDQ ensures the Dashboard only renders verified, trustworthy epidemiological alerts.
+
+Furthermore, when a table is registered for BDQ constraints in DynamoDB, the pipeline automatically dispatches a detailed **Data Quality Report** via email. This allows stakeholders to have immediate confidence in the data being promoted to the Silver and Gold layers:
 
 ![Data Quality Success Report](img/05_observability/09_success_quality_test_ses.png)
 
+> **📖 Deep Dive:** For more technical information on how to configure or extend these data quality tests, check the official documentation at **[Modules Guide > quality.py](modules.md#qualitypy)**.
 > 🎥 [Watch Observability Demo](videos/Dashboard_observabilidade.mp4)
 
 ---
