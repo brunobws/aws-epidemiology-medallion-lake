@@ -40,13 +40,19 @@ A centralized, real-time view of pipeline health. Because EpiMind is built with 
 
 ![Observability Logs](img/05_observability/01_dashboard_tab.png)
 
-### Proactive Alerting (AWS SES)
-While the dashboard provides a macroscopic view, the platform is equipped with proactive alerting via Amazon Simple Email Service (SES). 
-If an anomaly is detected during data ingestion (e.g., an external API goes down or an S3 file is missing), the pipeline immediately halts and dispatches an **Error Notification** to the engineering team:
+### Proactive Alerting & Data Quality (AWS SES & DynamoDB)
+
+While the dashboard provides a macroscopic view, the platform is equipped with proactive alerting via Amazon Simple Email Service (SES) and an automated Data Quality (DQ) module. 
+
+**Zero-Hardcoding Architecture**: 
+The engineering design ensures that neither the DQ validation rules nor the alerting email addresses are hardcoded in the Python scripts. Instead, the pipelines dynamically read constraints and routing configurations from DynamoDB parameters.
+For instance, the recipients of these alerts are dynamically configured in the [notification_params.json](../aws/dynamo_params/notification_params.json) configuration table.
+
+If an anomaly is detected during data ingestion (e.g., an external API goes down or an S3 file is missing), the pipeline immediately halts and dispatches an **Error Notification** to the configured engineering team:
 
 ![Ingestion Error Notification](img/05_observability/06_error_ses_email.png)
 
-Furthermore, when raw data passes through the Medallion Data Quality gates, a **Data Quality Report** is sent. This ensures that stakeholders have immediate confidence in the data being promoted to the Silver and Gold layers:
+Furthermore, when raw data passes through the Medallion Data Quality gates (evaluating constraints like `not_null`, `values_between`, and `df_count`), a **Data Quality Report** is sent. This ensures that stakeholders have immediate confidence in the data being promoted to the Silver and Gold layers:
 
 ![Data Quality Success Report](img/05_observability/09_success_quality_test_ses.png)
 
