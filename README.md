@@ -1,4 +1,4 @@
-  # EpiMind Data Platform on AWS
+  # 🦠 EpiMind: AI-Powered Epidemiological Data Platform on AWS
 
 ![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)
 ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apachespark&logoColor=white)
@@ -12,17 +12,18 @@
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-4479A1?style=for-the-badge&logo=github-actions&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-A production-grade data platform that monitors arbovirus epidemiological data (like Dengue) in the state of São Paulo, Brazil. It ingests data through a Medallion Architecture, integrating Artificial Intelligence (AI) for advanced data querying, and serves analytics via a web Streamlit dashboard hosted on a custom domain https://epimind.com.br/. 
+A production-grade data platform that monitors arbovirus epidemiological data (like Dengue) in the state of São Paulo, Brazil. It ingests data through a Medallion Architecture, integrating Artificial Intelligence (AI) for natural language querying, and serving analytics via a Streamlit web dashboard hosted on a custom domain https://epimind.com.br/. 
 
-Running on AWS with modularized logging, automated data quality testing, and email notifications for pipeline failures, with an event-configuration driven architecture. The platform currently extracts from 4 public APIs, treating and ingesting more than 3 Million records. Fully deployed using Terraform (IaC) and automated via GitHub Actions CI/CD.
+Running on AWS with modularized logging, automated data quality testing, and email notifications for pipeline failures, with an event-configuration driven architecture. The platform currently ingests data from 4 public APIs, processing over 3 Million records. Fully deployed using Terraform (IaC) and automated via GitHub Actions CI/CD.
 
 ## Table of Contents
 
 - [Live Dashboard](#live-dashboard)
 - [Architecture Overview](#architecture-overview)
 - [How It Works](#how-it-works)
-- [Cloud Setup](#cloud-setup)
-- [Local Setup](#local-setup)
+- [Setup](#setup)
+  - [Cloud Setup](#cloud-setup)
+  - [Local Setup](#local-setup)
 - [Technology Stack](#technology-stack)
 - [Key Features](#key-features)
 - [AI Analyst Integration](#ai-analyst-integration)
@@ -53,7 +54,7 @@ Watch demo videos to see the dashboard in action:
 - [Observability Logs Demo](docs/videos/Dashboard_observabilidade.mp4)
 
 > [!NOTE]
-> For detailed dashboard and AI documentation, see [Dashboard Guide](docs/dashboard.md).
+> For detailed dashboard and AI documentation, see [Dashboard Guide](docs/06_dashboard.md).
 
 <a id="architecture-overview"></a>
 
@@ -68,7 +69,7 @@ The pipeline runs entirely on a serverless AWS stack, orchestrated by AWS Step F
 - **Gold** – Pre-aggregated and modeled tables queryable via Athena.
 
 > [!NOTE]
-> [Full architecture documentation →](docs/architecture.md)
+> [Full architecture documentation →](docs/01_architecture.md)
 > [Interactive Miro Dashboard →](https://miro.com/app/board/uXjVHagcgOk=/?share_link_id=204214847785)
 
 <a id="how-it-works"></a>
@@ -83,9 +84,31 @@ The automated pipeline is orchestrated by **AWS Step Functions**:
 4. **Configuration Driven** – Glue jobs and Lambda functions are entirely driven by parameters stored in DynamoDB, meaning no code changes are required to add new tables.
 5. **Observability** – Structured execution logs are written to an Athena table, providing full execution context and performance monitoring shown in the Streamlit app.
 
+> [!NOTE]
+> [Learn more about how it works under the hood →](docs/01_architecture.md)
+
+<a id="ai-analyst-integration"></a> 
+
+## 🤖 AI Analyst Integration
+
+EpiMind features an embedded AI assistant powered by **Anthropic Claude Haiku** via AWS Bedrock. Users can ask epidemiological questions in natural language, and the system dynamically translates them into safe, optimized Athena SQL queries, fetches the results, and returns a human-readable analysis. 
+
+![AI Analyst Interface](docs/img/03_ai_analyst/08_ai_interface.png)
+
+- **Text-to-SQL:** No need to know SQL. The AI understands the context and builds the queries.
+- **Secure by Design:** Strictly bound by custom prompts to prevent hallucinations and block SQL injections.
+- **Cost-Efficient:** Powered by Claude Haiku for near-instant reasoning at a fraction of the cost.
+
+> [!NOTE]
+> [Read the full AI Guide (Flowchart, Bedrock Code & System Prompts) →](docs/07_ai_analyst.md)
+
+<a id="setup"></a>
+
+## Setup ⚙️
+
 <a id="cloud-setup"></a>
 
-## Cloud Setup ☁️
+### Cloud Setup ☁️
 
 All components run on AWS infrastructure. 
 
@@ -107,12 +130,16 @@ With read-only access, you can:
 
 <a id="local-setup"></a>
 
-## Local Setup 💻
+### Local Setup 💻
 
 If you want to run the project locally, there are two simple ways to initialize the dashboard and environment:
 
-- **Using Windows Batch:** Simply double-click the `.bat` file in the project root. It will automatically set up the environment and launch the Streamlit dashboard.
-- **Using PowerShell:** Run the `.ps1` script to activate the virtual environment and initialize all local dependencies.
+- **Using Windows Batch:** Simply double-click the `run.bat` file in the project root. It will automatically set up the environment and launch the Streamlit dashboard.
+- **Using PowerShell:** Activate the virtual environment and run the `.ps1` script (it automatically downloads dependencies and starts the app):
+  ```powershell
+
+  .\run.ps1
+  ```
 
 <a id="technology-stack"></a>
 
@@ -131,46 +158,30 @@ If you want to run the project locally, there are two simple ways to initialize 
 
 ## Key Features
 
-**Terraform IaC & CI/CD** – The entire AWS infrastructure is mapped as code and automatically deployed via GitHub Actions pipelines.
+- **Terraform IaC & CI/CD** – The entire AWS infrastructure is mapped as code and automatically deployed via GitHub Actions pipelines.
+- **AWS Step Functions** – Serverless orchestration for all ETL steps, providing visual state machines and eliminating the overhead of managing Apache Airflow.
+- **AI Integration** – Seamless connection with LLMs within the dashboard to translate human questions into data insights.
+- **Modularized Logging** – All components (Lambda, Glue jobs) use a centralized Logs class that writes structured execution records with step-level timing to an Athena table. Each log includes job name, status, warnings, errors, and custom metadata.
+- **Business Data Quality (BDQ)** – Automated validation tests built on Great Expectations check data completeness, accuracy, and consistency at each layer. Quality metrics are stored in Athena for historical analysis and trend detection, acting as an active firewall against corrupted government APIs.
+- **Email Alerting** – Configurable email notifications using AWS SES for pipeline failures and data quality reports. Alert recipients and thresholds are managed entirely in DynamoDB.
+- **Dynamic Data Processing Engines** – Both Glue jobs are designed as configuration-driven engines. Pass different DynamoDB parameters and they process entirely different datasets without touching the code.
+- **DynamoDB Configuration (Zero-Hardcoding)** – Pipeline parameters, notification settings, and data quality thresholds are stored dynamically in DynamoDB. The platform operates on a strict "Zero-Hardcoding Architecture".
+- **Optimized Storage** – Silver and Gold layers use partitioning by date for query performance. Gold layer uses Parquet for cost-efficient query performance via Athena.
+- **Custom Domain Setup** – The dashboard is exposed professionally via `epimind.com.br`, managed through `registro.br` and AWS.
 
-**AWS Step Functions** – Serverless orchestration for all ETL steps, providing visual state machines and eliminating the overhead of managing Apache Airflow.
-
-**AI Integration** – Seamless connection with LLMs within the dashboard to translate human questions into data insights.
-
-**Modularized Logging** – All components (Lambda, Glue jobs) use a centralized Logs class that writes structured execution records with step-level timing to an Athena table. Each log includes job name, status, warnings, errors, and custom metadata.
-
-**Business Data Quality (BDQ)** – Automated validation tests built on Great Expectations check data completeness, accuracy, and consistency at each layer. Quality metrics are stored in Athena for historical analysis and trend detection, acting as an active firewall against corrupted government APIs.
-
-**Email Alerting** – Configurable email notifications using AWS SES for pipeline failures and data quality reports. Alert recipients and thresholds are managed entirely in DynamoDB.
-
-**Generic Processing Engines** – Both Glue jobs are designed as configuration-driven engines. Pass different DynamoDB parameters and they process entirely different datasets without touching the code.
-
-**DynamoDB Configuration (Zero-Hardcoding)** – Pipeline parameters, notification settings, and data quality thresholds are stored dynamically in DynamoDB. The platform operates on a strict "Zero-Hardcoding Architecture".
-
-**Optimized Storage** – Silver and Gold layers use partitioning by date for query performance. Gold layer uses Parquet for cost-efficient query performance via Athena.
-
-**Custom Domain Setup** – The dashboard is exposed professionally via `epimind.com.br`, managed through `registro.br` and AWS.
-
-<a id="ai-analyst-integration"></a>
-
-## 🤖 AI Analyst Integration
-
-EpiMind features an embedded AI assistant powered by **Anthropic Claude Haiku** via AWS Bedrock. Users can ask epidemiological questions in natural language, and the system dynamically translates them into safe, optimized Athena SQL queries, fetches the results, and returns a human-readable analysis. The AI is strictly bound by custom prompts to prevent hallucinations and SQL injections.
-
-> [!NOTE]
-> [Read the full AI Guide (Flowchart, Bedrock Code & System Prompts) →](docs/ai_guide.md)
 
 <a id="documentation"></a>
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) – Design patterns, data flow, component details
-- [Dashboard Guide](docs/dashboard.md) – Using Streamlit analytics and Network flows
-- [AI Guide](docs/ai_guide.md) – Explaining how the AI Analyst works
-- [Infrastructure as Code & CI/CD](docs/infrastructure.md) – Terraform configuration, and GitHub Actions
-- [Modules](docs/modules.md) – Shared Python modules: Logs, Quality, AwsManager
-- [DynamoDB Parameters](docs/dynamo_params.md) – Pipeline configuration tables
-- [Unit Tests](docs/unit_tests.md) – Full test reference with per-class test tables
+- [01 Architecture](docs/01_architecture.md) – Design patterns, data flow, component details
+- [02 Infrastructure & CI/CD](docs/02_infrastructure_cicd.md) – Terraform configuration, and GitHub Actions
+- [03 Data Dictionary](docs/03_data_dictionary.md) – Table schemas and queries
+- [04 DynamoDB Configs](docs/04_dynamo_configs.md) – Pipeline configuration tables
+- [05 Python Modules](docs/05_python_modules.md) – Shared Python modules: Logs, Quality, AwsManager
+- [06 Dashboard Guide](docs/06_dashboard.md) – Using Streamlit analytics and Network flows
+- [07 AI Analyst](docs/07_ai_analyst.md) – Explaining how the AI Analyst works
+- [08 Testing](docs/08_testing.md) – Full test reference with per-class test tables
 
 <a id="code-organization"></a>
 
@@ -188,15 +199,15 @@ EpiMind features an embedded AI assistant powered by **Anthropic Claude Haiku** 
 
 ## Infrastructure & CI/CD
 
-The whole project runs as Code. See the [Infrastructure Guide](docs/infrastructure.md) for how Terraform manages the deployment, and how GitHub Actions automates changes to Lambdas, Glue, and the Step Functions workflow.
+The whole project runs as Code. See the [Infrastructure Guide](docs/02_infrastructure_cicd.md) for how Terraform manages the deployment, and how GitHub Actions automates changes to Lambdas, Glue, and the Step Functions workflow.
 
 <a id="testing"></a>
 
 ## Testing
 
-**Unit Tests** – A robust suite of **117 pytest tests** covering the shared modules, Lambda ingestion logic, and PySpark transformations (`pyspark_utils`). All tests are runnable fully offline without AWS dependencies (by mocking AWS services via `moto` and simulating local Spark DataFrames). See the `tests/` directory and `requirements-dev.txt` for details.
+**Unit Tests** – A robust suite of **117 pytest tests** covering the shared modules, Lambda ingestion logic, and PySpark transformations (`pyspark_utils`). All tests are runnable fully offline without AWS dependencies (by mocking AWS services via `moto` and simulating local Spark DataFrames). See the `tests/` directory and [Testing Guide](docs/08_testing.md) for details.
 
-<a id="future-enhancements"></a>
+<a id="future-enhancements"></a> 
 
 ## Future Enhancements
 

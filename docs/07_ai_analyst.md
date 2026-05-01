@@ -1,4 +1,4 @@
-# AI Guide (IA Analista)
+# 🤖 AI Guide (IA Analista)
 
 A unique feature of the EpiMind project is the integration of an AI Assistant that understands the underlying AWS architecture, the epidemiological context, and the data schemas. 
 
@@ -6,7 +6,7 @@ Users can ask complex questions using natural language to extract deep insights 
 
 ---
 
-## 🔄 How It Works (Architecture Flow)
+## How It Works (Architecture Flow)
 
 The integration uses a multi-step orchestration entirely managed in Python via Streamlit and `boto3`.
 
@@ -29,30 +29,30 @@ The integration uses a multi-step orchestration entirely managed in Python via S
 
 ---
 
-## 🧠 Model Selection & Costs
+## Model Selection & Costs
 
 The AI Analyst is powered by **Anthropic Claude Haiku**, provisioned via **AWS Bedrock** (`global.anthropic.claude-haiku`).
 
 **Why Claude Haiku?**
 - **Speed:** It is optimized for near-instant responses, which is critical for maintaining a fluid, interactive dashboard experience.
-- **Cost-Efficiency:** As an enterprise dashboard, scanning large Athena tables and hitting LLM APIs can add up quickly. Claude Haiku offers excellent reasoning capabilities for SQL generation at a fraction of the cost of heavier models (costing roughly **$0.25 per million input tokens**).
+- **Cost-Efficiency:** As an enterprise dashboard, scanning large Athena tables and hitting LLM APIs can add up quickly. Claude Haiku offers excellent reasoning capabilities for SQL generation at a fraction of the cost of heavier models (costing roughly **$0.25 per million input tokens**, which is up to 60x cheaper than models like GPT-4 or Claude Opus).
 
 ---
 
-## 🚦 Usage Limits
+## Usage Limits
 
 To prevent abuse and tightly control AWS costs (both from Bedrock API calls and Athena Data Scanned), the platform implements a strict throttle:
 - **5 Questions per User:** Once a user reaches 5 interactions, the chat input is gracefully disabled. This limit guarantees that the cloud expenditure for the demonstration environment remains highly predictable and sustainable.
 
 ---
 
-## 🛡️ Smart Filtering (Out of Scope Guardrails)
+## Smart Filtering (Out of Scope Guardrails)
 
 Because interacting with the database costs compute resources, the AI is configured with strict guardrails within its system prompt.
 
 If a user asks a question entirely unrelated to epidemiology or outside the available arbovirus data scope, the AI intelligently flags it as out-of-scope and refuses to execute an Athena query.
 
-This protects the system from "hallucinated" queries and unnecessary AWS Athena scan costs.
+This protects the system from "hallucinated" queries, unnecessary AWS Athena scan costs, and malicious SQL Injection attempts.
 
 ![Out of Scope Handling](img/03_ai_analyst/05_out_of_scope.png)
 
@@ -60,9 +60,9 @@ This protects the system from "hallucinated" queries and unnecessary AWS Athena 
 
 ---
 
-## 🕵️‍♂️ Under the Hood: Prompts & Code
+## Under the Hood: Prompts & Code
 
-For curiosity, below are the actual prompts and Python source code that orchestrate the AI Analyst pipeline.
+For transparency and code review, the core components orchestrating the AI pipeline are:
 
 - **System Prompt & Rules**: [`analista_prompt.yaml`](../streamlit_app/services/prompts/analista_prompt.yaml) — Dictates the persona, strict table selection rules, and mathematical risk formulas, ensuring the AI never hallucinates random logic.
 - **Data Dictionary**: [`data_dictionary.yaml`](../streamlit_app/services/prompts/data_dictionary.yaml) — The injected schema that teaches the AI how to query Athena correctly.
@@ -71,4 +71,4 @@ For curiosity, below are the actual prompts and Python source code that orchestr
 ---
 
 > [!NOTE]
-> For more information on the overall dashboard interface, data visualizations, and network flow, please see the [Dashboard Guide](dashboard.md).
+> For more information on the overall dashboard interface, data visualizations, and network flow, please see the [Dashboard Guide](06_dashboard.md).

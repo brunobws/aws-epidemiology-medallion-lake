@@ -46,7 +46,7 @@ After the upload completes, the function returns `filename` and `ingestion_date`
 **Notifications** are configured via the `notification_params` table in DynamoDB. This table controls which email addresses receive alerts on failure, warning, or success.
 
 > [!NOTE]
-> For DynamoDB parameter details, see [dynamo_params.md](dynamo_params.md). For shared module documentation, see [modules.md](modules.md).
+> For DynamoDB parameter details, see [04_dynamo_configs.md](04_dynamo_configs.md). For shared module documentation, see [05_python_modules.md](05_python_modules.md).
 
 **Scripts:** `aws/scripts/lambda_scripts/` 
  
@@ -54,13 +54,13 @@ After the upload completes, the function returns `filename` and `ingestion_date`
 
 ## Data Lake Layers (Medallion Architecture)
 
-### Bronze Layer — Raw Data
+### 🥉 Bronze Layer — Raw Data
 
 Raw data is landed in S3 in its original format (e.g., JSON or CSV). This acts as a historical source of truth, enabling reprocessing of the data without re-fetching from the source API.
 
-### Silver Layer — AWS Glue (PySpark)
+### 🥈 Silver Layer — Optimized Storage & Cleansing (AWS Glue/PySpark)
 
-The Glue job `bronze_to_silver` reads the JSON ro CSV file from the Bronze layer and converts it into [Parquet](https://parquet.apache.org/) format. Parquet is a columnar storage format that reduces query costs and execution time on Athena significantly compared to JSON — particularly when filtering on specific columns.
+The Glue job `bronze_to_silver` reads the JSON or CSV file from the Bronze layer and converts it into [Parquet](https://parquet.apache.org/) format while preserving the original granularity. Parquet is a columnar storage format that reduces query costs and execution time on Athena significantly compared to JSON — particularly when filtering on specific columns.
 
 Data is written to the Silver bucket partitioned by **date** (and location where applicable), so queries only scan the relevant partitions instead of the full dataset.
 
@@ -70,17 +70,17 @@ Data is written to the Silver bucket partitioned by **date** (and location where
 - Runs data quality checks configured in DynamoDB (`quality_params`) using the Quality module
 - Writes the clean result as Parquet, properly partitioned.
 
-**Designed as a generic processing engine:** 
-This job reads all its configuration from DynamoDB (`ingestion_params`) — source paths, schema definitions, quality rules. Pass it different parameters and it processes a completely different dataset without any code changes. This makes it reusable across multiple ingestion pipelines.
+**⚙️ Zero-Hardcoding Architecture:** 
+This job acts as a generic processing engine. It reads all its configuration from DynamoDB (`ingestion_params`) — source paths, schema definitions, quality rules. Pass it different parameters and it processes a completely different dataset without any code changes. This makes it infinitely reusable across multiple ingestion pipelines.
 
 > [!NOTE]
-> For DynamoDB parameter details, see [dynamo_params.md](dynamo_params.md). For shared module documentation, see [modules.md](modules.md).
+> For DynamoDB parameter details, see [04_dynamo_configs.md](04_dynamo_configs.md). For shared module documentation, see [05_python_modules.md](05_python_modules.md).
 
 **Script:** `aws/scripts/glue_scripts/bronze_to_silver.py`
 
 ![Athena Silver Query](img/05_observability/03_silver_query.png)
 
-### Gold Layer — Aggregation and Analytics - (PySpark)
+### 🥇 Gold Layer — Business Aggregation & Analytics (AWS Glue/PySpark)
 
 The Glue job `silver_to_gold` reads clean Silver data and produces pre-aggregated tables in the Gold layer. Instead of hardcoding the transformation logic inside the job, the SQL query is stored as a `.sql` file in S3 and loaded at runtime. This keeps business logic versioned and separated from execution code.
 
@@ -99,7 +99,7 @@ The Gold table follows a structured naming convention to make the schema self-ex
 Like the Bronze to Silver job, configuration is pulled from DynamoDB (`refined_params`). Point it at a different SQL file and target table, and it processes an entirely different aggregation without touching the code.
 
 > [!NOTE]
-> For DynamoDB parameter details, see [dynamo_params.md](dynamo_params.md). For shared module documentation, see [modules.md](modules.md).
+> For DynamoDB parameter details, see [04_dynamo_configs.md](04_dynamo_configs.md). For shared module documentation, see [05_python_modules.md](05_python_modules.md).
 
 **Script:** `aws/scripts/glue_scripts/silver_to_gold.py`
 
@@ -116,8 +116,8 @@ The dashboard runs in a **Docker container** on an EC2 instance, making it fully
 ![Streamlit Dashboard](img/02_dashboard/01_overview.png)
 
 > [!NOTE]
-> For detailed instructions on the UI, see [Dashboard Guide](dashboard.md).
-> To understand how the Artificial Intelligence connects to Athena, see [AI Guide](ai_guide.md).
+> For detailed instructions on the UI, see [Dashboard Guide](06_dashboard.md).
+> To understand how the Artificial Intelligence connects to Athena, see [AI Guide](07_ai_analyst.md).
 
 ---
 
@@ -130,11 +130,11 @@ To ensure the codebase remains DRY (Don't Repeat Yourself), all pipelines pull t
 ![DynamoDB Tables](img/01_architecture/03_dynamodb_tables.png)
 
 - **Execution Parameters**: Table definitions, paths, and metadata.
-- **Data quality tests parameters**: Table definitions, paths, and metadata.
+- **Data quality tests parameters**: Rules and thresholds for data validation (Great Expectations constraints).
 - **Notifications**: Control over who receives alerts on job success or failure. 
 
 > [!NOTE]
-> For DynamoDB parameter details, see [dynamo_params.md](dynamo_params.md)
+> For DynamoDB parameter details, see [04_dynamo_configs.md](04_dynamo_configs.md)
 
 ### Centralized Logging & Data Quality
 
@@ -145,7 +145,7 @@ Data quality validations are handled by the `Quality` module, built on top of Gr
 This custom observability approach is the primary way to monitor the pipeline. CloudWatch is also active and captures infrastructure-level metrics for Lambda invocations and Glue job runs, but the execution and quality logs in Athena give far more context for debugging and auditing.
 
 > [!NOTE]
-> For full logging and quality module documentation, see [modules.md](modules.md).
+> For full logging and quality module documentation, see [05_python_modules.md](05_python_modules.md).
 
 ![Execution Logs Table](img/05_observability/02_execution_logs.png)
 
@@ -166,4 +166,4 @@ All S3 data is encrypted at rest using [AWS SSE](https://docs.aws.amazon.com/Ama
 For a complete breakdown of all the tables in the Silver and Gold layers, including partition strategies, column details, update frequencies, and useful SQL query examples (Cheat Sheet), please refer to the dedicated tables guide.
 
 > [!NOTE]
-> View all table schemas and query examples at [tables.md](tables.md).
+> View all table schemas and query examples at [03_data_dictionary.md](03_data_dictionary.md).

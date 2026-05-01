@@ -9,7 +9,7 @@ Built entirely in **[Streamlit](https://streamlit.io/)**, the application allows
 
 ---
 
-## 1. 🔍 Surveillance & Analytics (Vigilância)
+## 1. Surveillance & Analytics (Vigilância)
 
 This tab visualizes the Gold layer tables, allowing users to drill down into the data across different cities and timeframes. 
 
@@ -23,15 +23,17 @@ This tab visualizes the Gold layer tables, allowing users to drill down into the
 
 ---
 
-## 2. 🤖 AI Analyst (IA Analista)
+## 2. AI Analyst (IA Analista)
 
-*(For deep technical details on Prompts and AWS Bedrock orchestration, please see the [AI Guide](ai_guide.md))*
+*(For deep technical details on Prompts and AWS Bedrock orchestration, please see the [AI Guide](07_ai_analyst.md))*
 
 The dashboard features an integrated AI assistant. Users can type epidemiological questions in natural language, and the Streamlit app orchestrates the prompt to generate secure SQL, queries the data lake, and returns a human-readable analysis.
 
+![AI Analyst Interface](img/03_ai_analyst/08_ai_interface.png)
+
 ---
 
-## 3. 📉 Observability (Observabilidade)
+## 3. Observability & Monitoring
 
 A centralized, real-time view of pipeline health. Because EpiMind is built with a custom logging framework, this tab reads directly from the `execution_logs` and `quality_logs` tables in Athena to show:
 - Whether Step Functions, Lambdas, and Glue jobs succeeded, threw warnings, or failed.
@@ -52,7 +54,7 @@ If an anomaly is detected during data ingestion (e.g., an external API goes down
 
 ![Ingestion Error Notification](img/05_observability/06_error_ses_email.png)
 
-### 🛡️ Business Data Quality (BDQ) Framework
+## 4. Business Data Quality (BDQ) Framework
 
 To guarantee the reliability of the epidemiological insights shown on the dashboard, EpiMind relies on a robust **Business Data Quality (BDQ)** pipeline. This is handled by a custom Python module ([quality.py](../aws/modules/quality.py)) which wraps the industry-standard **Great Expectations** framework.
 
@@ -68,12 +70,12 @@ Furthermore, when a table is registered for BDQ constraints in DynamoDB, the pip
 
 ![Data Quality Success Report](img/05_observability/09_success_quality_test_ses.png)
 
-> **📖 Deep Dive:** For more technical information on how to configure or extend these data quality tests, check the official documentation at **[Modules Guide > quality.py](modules.md#qualitypy)**.
+> **📖 Deep Dive:** For more technical information on how to configure or extend these data quality tests, check the official documentation at **[Modules Guide > quality.py](05_python_modules.md#qualitypy)**.
 > 🎥 [Watch Observability Demo](videos/Dashboard_observabilidade.mp4)
 
 ---
 
-## 4. ⚙️ Engineering: How It Works Under the Hood
+## 5. Engineering: How It Works Under the Hood
 
 The dashboard is built to scale and doesn't rely on static, cached extracts. It talks directly to the cloud.
 

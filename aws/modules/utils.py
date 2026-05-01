@@ -102,7 +102,7 @@ class Ses:
             <li><strong>Environment: </strong>{env}</li>
         </ul>
         <p>Regards,</p>
-        <p><strong>Data Engineering - Brewery Data Lake</strong></p>
+        <p><strong>Data Engineering - Data Lake</strong></p>
         </body>
         </html>"""
 

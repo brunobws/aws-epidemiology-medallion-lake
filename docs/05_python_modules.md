@@ -108,7 +108,7 @@ Wraps [AWS DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developer
 | `put_dynamo_record(dynamo_table, records)` | Inserts or replaces an item |
 | `get_email_notif(dynamo_notif_params, layer)` | Extracts notification email lists for a given layer from `notification_params`; appends the critical escalation address if the table is flagged as critical |
 
-For the parameter tables that each job reads via this class, see [dynamo_params.md](dynamo_params.md).
+For the parameter tables that each job reads via this class, see [04_dynamo_configs.md](04_dynamo_configs.md).
 
 ### Ssm
 
@@ -152,7 +152,7 @@ Source: [aws/modules/quality.py](../aws/modules/quality.py)
 
 The `Quality` class runs configurable data quality checks on a Spark or Pandas DataFrame. It is built on top of [Great Expectations](https://docs.greatexpectations.io/docs/), a data validation framework that wraps DataFrames with expectation methods and returns structured pass/fail results.
 
-It is triggered by the `bronze_to_silver` job when `has_bdq: true` is set in `ingestion_params`. The checks themselves are configured in the `quality_params` DynamoDB table — see [dynamo_params.md](dynamo_params.md) for the parameter reference.
+It is triggered by the `bronze_to_silver` job when `has_bdq: true` is set in `ingestion_params`. The checks themselves are configured in the `quality_params` DynamoDB table — see [04_dynamo_configs.md](04_dynamo_configs.md) for the parameter reference.
 
 **How it works:**
 - On instantiation, the DataFrame is wrapped in a Great Expectations dataset. A dedicated `Logs` instance is created for the quality layer (`table: quality_logs`) independently of the parent job's logger.

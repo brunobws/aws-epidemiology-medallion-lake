@@ -49,7 +49,7 @@ Source file: [aws/dynamo_params/notification_params.json](../aws/dynamo_params/n
 
 Controls which email addresses receive alerts and under what conditions. Used by Lambda, and both Glue jobs via the `utils` module. Each item is keyed by `trgt_tbl`, so notifications can be configured independently per table.
 
-For more on how email sending works, see [modules.md](modules.md).
+For more on how email sending works, see [05_python_modules.md](05_python_modules.md).
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
@@ -107,4 +107,4 @@ When `has_bdq: true` is set in `ingestion_params`, the job reads this table and 
 > - `false` (default) — the job continues, data is written to Silver, and the execution is logged with status `warning`
 > - `true` — the job halts immediately, an error is raised, and **no data is written**
 
-For full details on how the Quality module works, how results are stored in Athena, and what happens on failure, see [modules.md](modules.md).
+For full details on how the Quality module works, how results are stored in Athena, and what happens on failure, see [05_python_modules.md](05_python_modules.md).
