@@ -24,8 +24,9 @@ render_floating_ia_button()
 
 athena_service = require_athena()
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab5, tab2, tab3, tab4 = st.tabs([
     "Visão Geral",
+    "Busca por Cidade",
     "Série Temporal",
     "Ranking",
     "Perfil Demográfico",
@@ -46,5 +47,9 @@ with tab3:
 with tab4:
     from components.data.demographic import render_epidemic_demographic
     render_epidemic_demographic(athena_service, selected_disease)
+
+with tab5:
+    from components.data.search import render_epidemic_search
+    render_epidemic_search(athena_service, selected_disease)
 
 render_footer()

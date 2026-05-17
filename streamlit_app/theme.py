@@ -144,13 +144,14 @@ def card_css() -> str:
     """
 
 
-def kpi_card_html(value: str, label: str, delta: str = None, description: str = None) -> str:
+def kpi_card_html(value: str, label: str, delta: str = None, description: str = None, color: str = COLOR_DARK_GRAY) -> str:
     delta_html = (
         f"<span style='color: {COLOR_SUCCESS}; font-size: 12px;'>{delta}</span>"
         if delta
         else ""
     )
     title_attr = f"title='{description}'" if description else ""
+    cursor_style = "cursor: help;" if description else "cursor: default;"
     return f"""
     <div {title_attr} style='
         background: {COLOR_WHITE};
@@ -158,9 +159,10 @@ def kpi_card_html(value: str, label: str, delta: str = None, description: str = 
         padding: 16px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        cursor: help;
+        {cursor_style}
+        margin-bottom: 16px;
     '>
-        <div style='font-size: 24px; font-weight: 700; color: {COLOR_DARK_GRAY};
+        <div style='font-size: 24px; font-weight: 700; color: {color};
             margin-bottom: 6px;'>{value}</div>
         <div style='font-size: 12px; color: {COLOR_LIGHT_GRAY};
             margin-bottom: 8px;'>{label}</div>
@@ -196,6 +198,7 @@ def kpi_card_with_sparkline(
     trend_color = COLOR_ERROR if trend > 0 else (COLOR_SUCCESS if trend < 0 else COLOR_TEXT)
 
     title_attr = f"title='{description}'" if description else ""
+    cursor_style = "cursor: help;" if description else "cursor: default;"
     return f"""
     <div {title_attr} style='
         background: {COLOR_WHITE};
@@ -203,7 +206,8 @@ def kpi_card_with_sparkline(
         padding: 16px 16px 10px 16px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        cursor: help;
+        {cursor_style}
+        margin-bottom: 16px;
     '>
         <div style='font-size: 24px; font-weight: 700; color: {COLOR_DARK_GRAY};
             margin-bottom: 2px;'>{value}</div>

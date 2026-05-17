@@ -441,9 +441,15 @@ with col_chat:
         )
 
     # ── Process new message ───────────────────────────────────────
-    if user_input and bedrock_service and athena_service:
+    auto_prompt = None
+    if "auto_prompt" in st.session_state and st.session_state["auto_prompt"]:
+        auto_prompt = st.session_state["auto_prompt"]
+        st.session_state["auto_prompt"] = None
+
+    if (user_input or auto_prompt) and bedrock_service and athena_service:
+        question_text = user_input.strip() if user_input else auto_prompt
         process_question(
-            question=user_input.strip(),
+            question=question_text,
             bedrock=bedrock_service,
             athena=athena_service,
         )
